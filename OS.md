@@ -1,6 +1,7 @@
 # Interrupt handlers
 
 https://student.cs.uwaterloo.ca/~cs350/F23/notes/syscall.pdf
+https://www.scs.stanford.edu/05au-cs240c/lab/i386/s15_03.htm
 
 There are two types of interrupts.
 
