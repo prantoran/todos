@@ -1,5 +1,7 @@
 # Interrupt handlers
 
+https://student.cs.uwaterloo.ca/~cs350/F23/notes/syscall.pdf
+
 There are two types of interrupts.
 
 The first type are interrupts for signalling hardware events, like that the hardware timer has elapsed or that the hard drive controller has finished transferring data to memory.
@@ -41,6 +43,48 @@ Pushes the CPU registers
 ## trap_entry
 C handler that dispatches interrupts
 
+## errno
+where error codes are stored in POSIX
+
+
+# Execution context
+
+The environment where functions execute including their arguments, local
+variables, memory.
+
+Context is a unique set of CPU registers and a stack pointer
+
+Context is a unique set of CPU registers and a stack pointer
+
+Multiple execution contexts:
+I Application Context: Application threads
+I Kernel Context: Kernel threads, software interrupts, etc
+I Interrupt Context: Interrupt handler
+• Kernel and Interrupts usually the same context
+• Context transitions:
+I Context switch: a transitions between contexts
+I Thread Switch: a transition between threads (usually between kernel contexts)
+
+## Context switch: User to Kernel
+int $60 instruction triggers the exception handler (vector 60)
+
+### trapframe
+- Saves the application context
+
+#### trap_common 
+- saves trapframe on the kernel stack
+- returns to the instruction following int $60
+- restores the application context
+- Restores all CPU state from the trapframe
+
+### trap_entry()
+Calls trap_entry() to decode trap and Syscall_Entry()
+
+### Syscall_Entry()
+- decodes arguments and calls
+- stores return value and error in trapframe
+- rax: return value/error code
+
 
 # TLB
 
@@ -48,4 +92,8 @@ C handler that dispatches interrupts
 ## kernel stack
 
 # IST
+
+
+# Process table
+
 
