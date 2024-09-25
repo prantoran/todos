@@ -14,3 +14,12 @@ Stack registers
 Instructions:
 - call: Call function and save return address on stack
 - ret: Return from function
+
+
+In IA-32, there are 8 general purpose registers (GPR): EAX, EBX, ECX, EDX, ESI, EDI, EBP, and EIP.
+
+There are also 16-bit segment registers (CS, DS, ES, FS, GS, and SS).
+
+EFLAGS register contains status flags.
+
+MMX registers
