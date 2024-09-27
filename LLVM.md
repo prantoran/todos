@@ -46,3 +46,75 @@ endence makes it possible to optimize and compile all
 code comprising an application in a uniform manner
 (after linking), including language-specific runtime li-
 braries and system libraries
+
+Memory locations in LLVM are not in SSA form because
+many possible locations may be modified at a single store
+through a pointer,
+
+## Instruction set
+supports 31 opcodes
+
+not and neg
+are implemented in terms of xor and sub,
+
+Opcodes are overloaded
+
+most instructions are three-address form
+
+### phi instruction
+(non-gated)  function of SSA form.
+
+
+
+ Non-loop transformations
+in SSA form are further simplified because they do
+not encounter anti- or output dependences on SSA registers.
+
+Non-memory transformations are also greatly simplified because
+(unrelated to SSA) registers cannot have aliases.
+
+LLVM also makes the Control Flow Graph (CFG) of every
+function explicit in the representation.
+
+
+terminator instruction
+(branches, return, unwind, or invoke
+
+
+## Languageindependent
+Type Information,
+Cast, and GetElementPtr
+
+language-independent type system
+
+source-language-independent
+primitive types with predefined sizes (void, bool,
+signed/unsigned integers from 8 to 64 bits, and single- and
+double-precision floating-point types)
+
+four derived types: pointers, arrays, structures,
+and functions.
+
+the four derived types above capture
+the type information used even by sophisticated languageindependent
+analyses and optimizations.
+
+LLVM ‘cast’ instruction 
+
+no mixedtype
+operations
+
+
+getelementptr instruction
+address arithmetic
+perform pointer arithmetic in a way that both preserves type
+information and has machine-independent semantics
+
+
+# LLVM optimizations
+## Reassociation
+
+## Redundancy elimination
+
+
+
