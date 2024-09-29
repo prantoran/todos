@@ -111,10 +111,119 @@ perform pointer arithmetic in a way that both preserves type
 information and has machine-independent semantics
 
 
+# Why use Static Single Assignment (SSA)?
+
+SSA is a way of structuring the
+intermediate representation so that
+every variable is assigned exactly once
+
+SSA for makes use-def chains explicit in the IR, which simplies some optimizations.
+
+Use-def chains (multiple assignments to the same expression) are represented with $\phi$() function.
+
+Static single-assignment form arranges for
+every value computed by a program to have
+a unique assignment (aka, “definition”)
+
+A procedure is in SSA form if every variable
+has (statically) exactly one definition
+
+SSA form simplifies several important
+optimizations, including various forms of
+redundancy elimination
+
+## Chordal graphs
+
+the interference graph for
+an SSA form IR is always chordal
+
+## Creating SSA form
+
+To translate into SSA form:
+• Insert trivial Φ functions at join points for each
+live variable
+• Φ(t,t,…,t), where the number of t’s is the
+number of incoming flow edges
+• Globally analyze and rename definitions and uses
+of variables to establish SSA property
+After we are done with our optimizations, we
+can throw away all of the statements
+involving Φ functions (ie, “unSSA”)
+
+
+## Dominance frontiers
+
+An SSA form with the minimum number of Φ
+functions can be created by using dominance
+frontiers
+
+Definitions:
+• In a flowgraph, node a dominates node b (“a dom b”)
+if every possible execution path from entry to b
+includes a
+• If a and b are different nodes, we say that a strictly
+dominates b (“a sdom b”)
+• If a sdom b, and there is no c such that a sdom c and
+c sdom b, we say that a is the immediate dominator
+of b (“a idom b”)
+
+
+For a node a, the dominance frontier
+of a, DF[a], is the set of all nodes b
+such that a strictly dominates an
+immediate precedessor of b but not b
+itself
+More formally:
+• DF[a] = {b | (∃c∈Pred(b) such that a
+dom c but not a sdom b}
+
+### Computing DF[a]
+
+A naïve approach to computing DF[a] for all
+nodes a would require quadratic time
+However, an approach that usually is linear
+time involves cutting into parts:
+• DFl[a] = {b ∈ Succ(a) | idom(b)≠a}
+• DFu[a,c] = {b ∈ DF[c] | idom(c)=a ∧ idom(b)≠a}
+
+Then:
+• DF[a] = DFl[a] ∪
+∪ DF [a,c]
+
+What we want, in the end, is the set of
+nodes that need Φ functions, for each
+variable
+
+So we define DF[S], for a set of
+flowgraph nodes S:
+• DF[S] = ∪ DF[a]
+
 # LLVM optimizations
 ## Reassociation
 
-## Redundancy elimination
+## Redundancy elimination optimization
+remove redundant computations
 
+Common RE opts are:
+### value numbering
+
+In SSA form, if x and a are variables,
+they are congruent only if they are
+both live and they are the same
+variable
+
+Or if they are provably the same value
+(by constant or copy propagation)
+
+#### Local (within block) value numbering
+
+#### Global (within procedure) value numbering
+- Embed use-def into the IR
+
+
+
+### conditional constant propagation
+### common-subexpression elimination (CSE)
+### partial-redundancy elimination
 
 
