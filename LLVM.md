@@ -227,3 +227,53 @@ Or if they are provably the same value
 ### partial-redundancy elimination
 
 
+# Function Calls and Exception Handling
+
+
+LLVM code uses a runtime library for C++ ex-
+ceptions support while exposing control-flow.
+
+The runtime handles all of the implementation-specific details, such
+as allocating memory for exceptions
+
+the runtime functions manipulate the thread-local state of the excep-
+tion handling runtime, but don’t actually unwind the stack.
+
+Because the calling code performs the stack unwind, the op-
+timizer has a better view of the control flow of the function
+without having to perform interprocedural analysis.
+
+For inlining, unwind target can be the same function as the unwinder.
+
+## try/catch
+Any function call within the try block becomes an
+invoke. Any throw within the try-block becomes a call to
+the runtime library followed by an
+explicit branch to the appropriate catch block
+
+The “catch block” then uses the C++ runtime library to determine if
+the top-level current exception is of one of the types that is
+handled in the catch block. If so, it transfers control to the
+appropriate block, otherwise it calls unwind to continue un-
+winding.
+
+The runtime library handles the language-specific
+semantics of determining whether the current exception is
+of a caught type.
+
+# Plain-text, Binary, and In-memory Representations
+
+The LLVM representation is a first class language which
+defines equivalent textual, binary, and in-memory (i.e., com-
+piler’s internal) representations.
+
+The instruction set serves as both:
+1. a persistent, offline code representation
+2. a compiler internal representation
+There is no need of semantic conversions between the two.
+
+# COMPILER ARCHITECTURE
+Goal: enable sophisticated transformations at link-time, install-time, run-
+time, and idle-time, by operating on the LLVM representation of a program at all stages.
+
+
