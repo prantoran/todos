@@ -19,6 +19,8 @@ compile-time, link-time (interprocedural), and runtime transformations for C and
 
 scalar, interprocedural, profile-driven, and some simple loop optimizations.
 
+link time optimizations
+
 ## research papers
 
 ### static analysis
