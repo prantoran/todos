@@ -32,3 +32,5 @@ https://www.ambray.dev/writing-a-windows-loader-part-3/
 bound imports 
 
 forwarder chain in image import descriptor
+
+https://guidedhacking.com/threads/how-64-bit-programs-use-virtualprotect
