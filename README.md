@@ -28,3 +28,7 @@ https://dl.acm.org/doi/10.1145/2544137.2544151
 
 ## windows
 https://www.ambray.dev/writing-a-windows-loader-part-3/
+
+bound imports 
+
+forwarder chain in image import descriptor
