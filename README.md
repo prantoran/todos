@@ -8,6 +8,16 @@ https://llvm.org/pubs/2004-01-30-CGO-LLVM.html
 
 https://llvm.org/docs/GarbageCollection.html
 
+
+interprocedural analyses, such as a
+context-sensitive points-to analysis (Data Structure Anal-
+ysis [31]), call graph construction, and Mod/Ref analy-
+sis, and interprocedural transformations like inlining, dead
+global elimination, dead argument elimination, dead type
+elimination, constant propagation, array bounds check elim-
+ination [28], simple structure field reordering,
+
+
 ## cpp
 gproc
 
