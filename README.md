@@ -15,7 +15,7 @@ ysis [31]), call graph construction, and Mod/Ref analy-
 sis, and interprocedural transformations like inlining, dead
 global elimination, dead argument elimination, dead type
 elimination, constant propagation, array bounds check elim-
-ination [28], simple structure field reordering,
+ination [28], simple structure field reordering, automatic pool allocation
 
 
 ## cpp
