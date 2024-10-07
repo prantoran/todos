@@ -290,6 +290,44 @@ checks conservatively whether memory accesses to an object
 are consistent with those declared types
 
 
+## How do highlevel features map onto LLVM?
+
+Implicit calls (e.g. copy constructors) and parameters
+(e.g. ‘this’ pointers) are made explicit.
+
+Templates are fully instantiated by the C++ front
+end before LLVM code is generated. (True polymorphic
+types in other languages would be expanded
+into equivalent code using non-polymorphic types in
+LLVM.)
+
+Base classes are expanded into nested structure types.
+For this C++ fragment:
+class base1 { int Y; };
+class base2 { float X; };
+class derived : base1, base2 { short Z; };
+the LLVMtype for class derived is ‘{ {int}, {float},
+short }’. If the classes have virtual functions, a vtable
+pointer would also be included and initialized at
+object allocation time to point to the virtual function
+table
+
+A virtual function table is represented as a global, con-
+stant array of typed function pointers, plus the type-id
+object for the class. With this representation, virtual
+method call resolution can be performed by the LLVM
+optimizer as effectively as by a typical source compiler
+(more effectively if the source compiler uses only permodule
+instead of cross-module pointer analysis).
+
+C++ exceptions are lowered to the ‘invoke’ and
+‘unwind’ instructions, exposing
+exceptional control flow in the CFG. In fact,
+having this information available at link time enables
+LLVM to use an interprocedural analysis to eliminate
+unused exception handlers. This optimization is much
+less effective if done on a per-module basis in a sourcelevel
+compiler.
 
 
 
