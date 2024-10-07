@@ -282,6 +282,15 @@ points-to analysis called Data Structure Analysis
 Several transformations in LLVM are based on
 DSA, including Automatic Pool Allocation
 
+As part of
+the analysis, DSA extracts LLVM types for a subset of memory
+objects in the program, using declared
+types in the LLVMcode as speculative type information, and
+checks conservatively whether memory accesses to an object
+are consistent with those declared types
+
+
+
 
 
 # COMPILER ARCHITECTURE
