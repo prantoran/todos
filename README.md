@@ -36,6 +36,19 @@ link time optimizations
 ### static analysis
 https://dl.acm.org/doi/10.1145/2544137.2544151
 
+### llvm
+
+C. Lattner and V. Adve. Data Structure Analysis: A
+Fast and Scalable Context-Sensitive Heap Analysis.
+Tech. Report UIUCDCS-R-2003-2340, Computer
+Science Dept., Univ. of Illinois at Urbana-Champaign,
+Apr 2003.
+
+C. Lattner and V. Adve. Automatic Pool Allocation
+for Disjoint Data Structures. In Proc. ACM SIGPLAN
+Workshop on Memory System Performance, Berlin,
+Germany, Jun 2002.
+
 ## windows
 https://www.ambray.dev/writing-a-windows-loader-part-3/
 
