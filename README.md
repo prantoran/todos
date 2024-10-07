@@ -29,7 +29,8 @@ gproc
 
 compile-time, link-time (interprocedural), and runtime transformations for C and C++ programs
 
-
+https://icps.u-strasbg.fr/~pop/gcc-ast.html#:~:text=Abstract%20Syntax%20Trees%20(or%20AST)%20are%20produced%20by%20each
+https://gcc.gnu.org/projects/ast-optimizer.html#:~:text=GCC%2C%20in%20common%20with%20many%20other%20compilers%2C%20has,and%20is%20close%20to%20the%20generated%20assembly%20code.
 
 ## compiler
 
