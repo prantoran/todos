@@ -9,6 +9,12 @@ https://llvm.org/pubs/2004-01-30-CGO-LLVM.html
 https://llvm.org/docs/GarbageCollection.html
 
 
+llvm type system 
+custom memory allocation
+non-type safe program constructs 
+custom allocators
+
+
 interprocedural analyses, such as a
 context-sensitive points-to analysis (Data Structure Anal-
 ysis [31]), call graph construction, and Mod/Ref analy-
