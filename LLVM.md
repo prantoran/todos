@@ -272,6 +272,18 @@ The instruction set serves as both:
 2. a compiler internal representation
 There is no need of semantic conversions between the two.
 
+# Representation Issues
+## What value does type information provide?
+
+LLVMincludes a flow-insensitive, field-sensitive and contextsensitive
+points-to analysis called Data Structure Analysis
+(DSA)
+
+Several transformations in LLVM are based on
+DSA, including Automatic Pool Allocation
+
+
+
 # COMPILER ARCHITECTURE
 Goal: enable sophisticated transformations at link-time, install-time, run-
 time, and idle-time, by operating on the LLVM representation of a program at all stages.
