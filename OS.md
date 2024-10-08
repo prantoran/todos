@@ -1,3 +1,8 @@
+# Ubuntu
+
+## Rebooting into bios from terminal
+https://askubuntu.com/questions/1166120/how-do-i-enter-the-bios-uefi-from-ubuntu#:~:text=You%20can%20enter%20the%20BIOS/UEFI%20directly%20from%20Ubuntu%20by%20running
+
 # Interrupt handlers
 
 https://student.cs.uwaterloo.ca/~cs350/F23/notes/syscall.pdf
