@@ -23,6 +23,9 @@ global elimination, dead argument elimination, dead type
 elimination, constant propagation, array bounds check elim-
 ination [28], simple structure field reordering, automatic pool allocation
 
+hardware-based trace cache
+
+automatic pool allocation instead of garbage collection
 
 ## cpp
 gproc
