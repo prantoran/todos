@@ -220,12 +220,34 @@ Or if they are provably the same value
 #### Global (within procedure) value numbering
 - Embed use-def into the IR
 
+### DCE
+
+Aggressive mode: assume objects are dead until proven
+otherwise, allowing dead objects with cycles to be deleted.
 
 
 ### conditional constant propagation
 ### common-subexpression elimination (CSE)
 ### partial-redundancy elimination
 
+
+## DSA (Data Structure Analysis)
+
+spends a negligible fraction of its time processing
+the code representation itself, so its run times are not
+indicative of the efficiency of the representation
+
+
+
+
+## Common link-time optimizations
+
+### (DGE) Dead global variable and function elimination
+
+### DAE (aggressive Dead Argument and return value
+Elimination)
+
+### inline (a function integration pass)
 
 # Function Calls and Exception Handling
 
