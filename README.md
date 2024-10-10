@@ -28,6 +28,9 @@ hardware-based trace cache
 automatic pool allocation instead of garbage collection
 
 ## cpp
+
+stack frame of a function
+
 gproc
 
 compile-time, link-time (interprocedural), and runtime transformations for C and C++ programs
@@ -36,6 +39,18 @@ https://icps.u-strasbg.fr/~pop/gcc-ast.html#:~:text=Abstract%20Syntax%20Trees%20
 https://gcc.gnu.org/projects/ast-optimizer.html#:~:text=GCC%2C%20in%20common%20with%20many%20other%20compilers%2C%20has,and%20is%20close%20to%20the%20generated%20assembly%20code.
 
 setjmp/longjmp
+
+## gdb
+
+how to set a hardware read breakpoint at the bottom of the stack after the
+pushad is executed
+- the program will be interrupted when it performs a restore
+operation using the popad instruction.
+- HW break [ESP]
+
+effect of step over the pushad instruction
+
+Get EIP as OEP
 
 
 ## compiler
@@ -66,6 +81,8 @@ Germany, Jun 2002.
 
 ## windows
 https://www.ambray.dev/writing-a-windows-loader-part-3/
+
+ASLR
 
 bound imports 
 
