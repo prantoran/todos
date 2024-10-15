@@ -199,6 +199,12 @@ flowgraph nodes S:
 • DF[S] = ∪ DF[a]
 
 # LLVM optimizations
+
+## inline
+
+## constant fold
+
+
 ## Reassociation
 
 ## Redundancy elimination optimization
