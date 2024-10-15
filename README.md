@@ -31,6 +31,15 @@ automatic pool allocation instead of garbage collection
 
 stack frame of a function
 
+https://blog.the-pans.com/cpp-exception-1/
+https://gcc.gnu.org/wiki/LinkTimeOptimization
+
+http://web.mit.edu/tibbetts/Public/inside-c/www/rtti.html
+
+https://quuxplusone.github.io/blog/2021/02/15/devirtualization/
+
+https://www.isi.deterlab.net/file.php?file=/share/shared/AnintroductiontoDwarf
+
 gproc
 
 compile-time, link-time (interprocedural), and runtime transformations for C and C++ programs
@@ -61,12 +70,24 @@ link time optimizations
 
 cross-module pointer analysis
 
+https://www.naukri.com/code360/library/partial-redundancy-elimination-in-compiler-design
+
+https://www.cs.cornell.edu/courses/cs6120/2019fa/blog/sccp/
+
+https://cr.openjdk.org/~cslucas/escape-analysis/EscapeAnalysis.html
+
+https://www.cs.cornell.edu/courses/cs6120/2022sp/blog/type-alias/
+
+https://www.brainkart.com/article/How-Cross-File-Optimization-Can-Be-Used-to-Improve-Performance_9409/
+
 ## research papers
 
 ### static analysis
 https://dl.acm.org/doi/10.1145/2544137.2544151
 
 ### llvm
+
+https://alibabatech.medium.com/gcc-vs-clang-llvm-an-in-depth-comparison-of-c-c-compilers-899ede2be378
 
 C. Lattner and V. Adve. Data Structure Analysis: A
 Fast and Scalable Context-Sensitive Heap Analysis.
