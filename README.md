@@ -27,6 +27,53 @@ hardware-based trace cache
 
 automatic pool allocation instead of garbage collection
 
+# Linux
+
+## Network bridge
+
+https://linux.die.net/man/8/iptables
+
+https://www.howtogeek.com/177621/the-beginners-guide-to-iptables-the-linux-firewall/
+
+https://developers.redhat.com/articles/2022/04/06/introduction-linux-bridging-commands-and-features#
+
+https://www.baeldung.com/linux/bridging-network-interfaces
+
+https://wiki.linuxfoundation.org/networking/bridge
+
+https://man7.org/linux/man-pages/man7/netlink.7.html
+
+final distribution boards (FDBs), main distribution boards (MDBs), and virtual local area networks (VLANs)
+
+### virtual network veth0
+https://superuser.com/questions/764986/howto-setup-a-veth-virtual-network
+
+https://man7.org/linux/man-pages/man4/veth.4.html
+
+### tcpdump
+
+https://linux.die.net/man/8/tcpdump
+
+https://www.techtarget.com/searchnetworking/tutorial/How-to-capture-and-analyze-traffic-with-tcpdump
+
+https://www.tcpdump.org/
+
+### nginx
+
+http://nginx.org/en/docs/beginners_guide.html
+
+## dev tools
+
+### tmux
+
+https://hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/
+
+https://github.com/tmux/tmux/wiki/Getting-Started
+
+## sources list
+
+https://bash.cyberciti.biz/guide//etc/apt/sources.list_file
+
 ## cpp
 
 stack frame of a function
