@@ -29,6 +29,9 @@ automatic pool allocation instead of garbage collection
 
 # Linux
 
+## terminal
+https://dev.to/girordo/a-hands-on-guide-to-setting-up-zsh-oh-my-zsh-asdf-and-spaceship-prompt-with-zinit-for-your-development-environment-91n
+
 ## Network bridge
 
 https://linux.die.net/man/8/iptables
@@ -151,6 +154,8 @@ Germany, Jun 2002.
 https://www.ambray.dev/writing-a-windows-loader-part-3/
 
 ASLR
+
+
 
 bound imports 
 
