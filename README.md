@@ -162,3 +162,12 @@ bound imports
 forwarder chain in image import descriptor
 
 https://guidedhacking.com/threads/how-64-bit-programs-use-virtualprotect
+
+
+
+## Rust
+
+Ownership model
+
+borrow checker
+
