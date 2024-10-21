@@ -32,6 +32,8 @@ automatic pool allocation instead of garbage collection
 ## terminal
 https://dev.to/girordo/a-hands-on-guide-to-setting-up-zsh-oh-my-zsh-asdf-and-spaceship-prompt-with-zinit-for-your-development-environment-91n
 
+https://www.linuxtechi.com/how-to-install-kvm-on-ubuntu/
+
 ## Network bridge
 
 https://linux.die.net/man/8/iptables
