@@ -1,0 +1,210 @@
+Package: systemd
+Status: install ok installed
+Priority: important
+Section: admin
+Installed-Size: 11728
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: foreign
+Version: 255.4-1ubuntu8.4
+Replaces: systemd-repart (<< 250.2-3~)
+Provides: systemd-repart (= 255.4-1ubuntu8.4), systemd-sysusers (= 255.4-1ubuntu8.4), systemd-tmpfiles (= 255.4-1ubuntu8.4)
+Depends: libacl1 (>= 2.2.23), libapparmor1 (>= 2.13), libaudit1 (>= 1:2.2.1), libcryptsetup12 (>= 2:2.4), libfdisk1 (>= 2.33), libkmod2 (>= 15), libpam0g (>= 0.99.7.1), libseccomp2 (>= 2.3.1), libsystemd-shared (= 255.4-1ubuntu8.4), libsystemd0 (= 255.4-1ubuntu8.4), systemd-dev (>= 255.4-1ubuntu8.4), mount
+Pre-Depends: libblkid1 (>= 2.30.2), libc6 (>= 2.39), libcap2 (>= 1:2.10), libgcrypt20 (>= 1.10.0), liblz4-1 (>= 0.0~r122), liblzma5 (>= 5.1.1alpha+20120614), libmount1 (>= 2.30), libselinux1 (>= 3.1~), libssl3t64 (>= 3.0.0), libzstd1 (>= 1.5.5)
+Recommends: default-dbus-system-bus | dbus-system-bus, networkd-dispatcher, systemd-timesyncd | time-daemon, systemd-resolved
+Suggests: systemd-container, systemd-homed, systemd-userdbd, systemd-boot, libfido2-1, libip4tc2, libp11-kit0, libqrencode4, libtss2-esys-3.0.2-0, libtss2-mu-4.0.1-0, libtss2-rc0, libtss2-tcti-device0, polkitd
+Breaks: dracut (<< 059-5), less (<< 563), sicherboot (<< 0.1.6), systemd-repart (<< 250.2-3~)
+Conflicts: consolekit, libpam-ck-connector, opensysusers, systemd-shim
+Conffiles:
+ /etc/systemd/journald.conf 75b80e6a9f99a86a34e4772d6a98cd15
+ /etc/systemd/logind.conf 224fc79c1fee69b72ed4def02967ac6b
+ /etc/systemd/networkd.conf 189a57178c5ba90358b5e60b0afed34b
+ /etc/systemd/pstore.conf 8086c035fbf3bde72f2339a6ee50d2a4
+ /etc/systemd/sleep.conf a73525164051d35ff700a76eb7db3f68
+ /etc/systemd/system.conf c9f795de4c926f776ccb554b4e593f80
+ /etc/systemd/user.conf c13845a7cbc3e115e4c23949a3e2b917
+Description: system and service manager
+ systemd is a system and service manager for Linux. It provides aggressive
+ parallelization capabilities, uses socket and D-Bus activation for starting
+ services, offers on-demand starting of daemons, keeps track of processes using
+ Linux control groups, maintains mount and automount points and implements an
+ elaborate transactional dependency-based service control logic.
+ .
+ Installing the systemd package will not switch your init system unless you
+ boot with init=/lib/systemd/systemd or install systemd-sysv in addition.
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Original-Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+
+Package: systemd-container
+Status: install ok installed
+Priority: optional
+Section: admin
+Installed-Size: 1394
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: foreign
+Source: systemd
+Version: 255.4-1ubuntu8.4
+Depends: libacl1 (>= 2.2.23), libbz2-1.0, libc6 (>= 2.38), libcurl4t64 (>= 7.16.3), liblzma5 (>= 5.1.1alpha+20120614), libseccomp2 (>= 2.3.1), libselinux1 (>= 3.1~), libssl3t64 (>= 3.0.0), libsystemd-shared (= 255.4-1ubuntu8.4), zlib1g (>= 1:1.1.4), systemd, default-dbus-system-bus | dbus-system-bus
+Recommends: libnss-mymachines
+Description: systemd container/nspawn tools
+ This package provides systemd's tools for nspawn and container/VM management:
+  * systemd-nspawn
+  * systemd-machined and machinectl
+  * systemd-importd
+  * systemd-portabled and portablectl
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Original-Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+
+Package: systemd-dev
+Status: install ok installed
+Priority: optional
+Section: devel
+Installed-Size: 720
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: all
+Multi-Arch: foreign
+Source: systemd
+Version: 255.4-1ubuntu8.4
+Replaces: systemd (<< 253-2~), systemd-homed (<< 254.1-3~), udev (<< 253-2~)
+Breaks: systemd (<< 253-2~), systemd-homed (<< 254.1-3~), udev (<< 253-2~)
+Description: systemd development files
+ This package contains the systemd and udev pkg-config files. Note that these
+ are different from the libsystemd's and libudev's pkg-config files, which can
+ still be found in the respective dev packages, but instead provide data such as
+ the installation directories for units, and more.
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Original-Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+
+Package: systemd-hwe-hwdb
+Status: install ok installed
+Priority: optional
+Section: admin
+Installed-Size: 16
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: all
+Source: systemd-hwe
+Version: 255.1.4
+Depends: udev
+Description: udev rules for hardware enablement (HWE)
+ systemd-hwe-hwdb contains hwdb rules for HWE on Ubuntu,
+ which are not yet present in systemd.
+
+Package: systemd-oomd
+Status: install ok installed
+Priority: optional
+Section: admin
+Installed-Size: 235
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Source: systemd
+Version: 255.4-1ubuntu8.4
+Replaces: systemd (<< 250.2-2~)
+Depends: libc6 (>= 2.34), libsystemd-shared (= 255.4-1ubuntu8.4), systemd | systemd-standalone-sysusers | systemd-sysusers
+Breaks: systemd (<< 250.2-2~)
+Conffiles:
+ /etc/systemd/oomd.conf a17b86a97adcdb283e0ec34540c79841
+Description: userspace out-of-memory (OOM) killer
+ systemd-oomd is a system service that uses cgroups-v2 and
+ pressure stall information (PSI) to monitor and take action on
+ processes before an OOM occurs in kernel space.
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Original-Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+
+Package: systemd-resolved
+Status: install ok installed
+Priority: important
+Section: admin
+Installed-Size: 884
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: foreign
+Source: systemd
+Version: 255.4-1ubuntu8.4
+Replaces: resolvconf, systemd (<< 251.3-2~)
+Provides: resolvconf
+Depends: libc6 (>= 2.39), libssl3t64 (>= 3.0.0), libsystemd-shared (= 255.4-1ubuntu8.4), systemd (= 255.4-1ubuntu8.4), default-dbus-system-bus | dbus-system-bus
+Suggests: polkitd
+Breaks: systemd (<< 251.3-2~)
+Conflicts: resolvconf
+Conffiles:
+ /etc/systemd/resolved.conf 34cadb9a0b5de37242f73c23ac354d05
+Description: systemd DNS resolver
+ This package provides systemd's DNS resolver and the command line tool to
+ manage it.
+ .
+ Installing this package automatically overwrites /etc/resolv.conf and switches
+ it to be managed by systemd-resolved.
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Original-Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+
+Package: systemd-sysv
+Status: install ok installed
+Priority: important
+Section: admin
+Installed-Size: 124
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: foreign
+Source: systemd
+Version: 255.4-1ubuntu8.4
+Replaces: sysvinit-core
+Depends: systemd (= 255.4-1ubuntu8.4)
+Pre-Depends: systemd
+Recommends: libpam-systemd, libnss-systemd
+Conflicts: bfh-container (<< 20211009-22~), file-rc, initscripts, molly-guard (<< 0.8.2~), orphan-sysvinit-scripts, progress-linux-container (<< 20221002-11~), systemd-shim, sysvinit-core
+Description: system and service manager - SysV compatibility symlinks
+ This package provides manual pages and compatibility symlinks needed for
+ systemd to replace sysvinit.
+ .
+ Installing systemd-sysv will overwrite /sbin/init with a symlink to systemd.
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Original-Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+
+Package: systemd-timesyncd
+Status: install ok installed
+Priority: important
+Section: admin
+Installed-Size: 201
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: foreign
+Source: systemd
+Version: 255.4-1ubuntu8.4
+Replaces: time-daemon
+Provides: time-daemon
+Depends: libc6 (>= 2.34), libsystemd-shared (= 255.4-1ubuntu8.4), systemd
+Conflicts: time-daemon
+Conffiles:
+ /etc/dhcp/dhclient-exit-hooks.d/timesyncd 1f941d2a11991ff151fe74064f2b5cf4
+ /etc/systemd/timesyncd.conf e0877ff040d9c2541955eb1c1e856031
+Description: minimalistic service to synchronize local time with NTP servers
+ The package contains the systemd-timesyncd system service that may be used to
+ synchronize the local system clock with a remote Network Time Protocol server.
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Original-Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+
+Package: udev
+Status: install ok installed
+Priority: important
+Section: admin
+Installed-Size: 10842
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: foreign
+Source: systemd
+Version: 255.4-1ubuntu8.4
+Replaces: systemd (<< 255~rc1-4~)
+Depends: libacl1 (>= 2.2.23), libblkid1 (>= 2.37.2), libc6 (>= 2.38), libcap2 (>= 1:2.10), libkmod2 (>= 15), libselinux1 (>= 3.1~), systemd | systemd-standalone-sysusers | systemd-sysusers, libudev1 (= 255.4-1ubuntu8.4), systemd-dev (>= 255.4-1ubuntu8.4)
+Recommends: systemd-hwe-hwdb
+Breaks: systemd (<< 255.4-1ubuntu8.4)
+Conflicts: systemd (<< 255~rc1-4~)
+Conffiles:
+ /etc/udev/iocost.conf fad2a2c4c34d796b6802bc62c19cc4ae
+ /etc/udev/udev.conf bf60be80a4cc51271a1618edf5a6d66f
+Description: /dev/ and hotplug management daemon
+ udev is a daemon which dynamically creates and removes device nodes from
+ /dev/, handles hotplug events and loads drivers at boot time.
+Homepage: https://www.freedesktop.org/wiki/Software/systemd
+Original-Maintainer: Debian systemd Maintainers <pkg-systemd-maintainers@lists.alioth.debian.org>
+
