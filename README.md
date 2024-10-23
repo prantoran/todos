@@ -28,11 +28,24 @@ hardware-based trace cache
 automatic pool allocation instead of garbage collection
 
 # Linux
+## bridge network
+Spanning Tree Protocol
+
+## kvm
+
+virsh vs virt-manager
+
+### virsh
+
+how to connect to server/vm using ssh
+
 
 ## terminal
 https://dev.to/girordo/a-hands-on-guide-to-setting-up-zsh-oh-my-zsh-asdf-and-spaceship-prompt-with-zinit-for-your-development-environment-91n
 
 https://www.linuxtechi.com/how-to-install-kvm-on-ubuntu/
+
+
 
 ## Network bridge
 
