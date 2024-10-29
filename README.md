@@ -31,6 +31,8 @@ automatic pool allocation instead of garbage collection
 # Linux
 ## bridge network
 Spanning Tree Protocol
+/etc/network
+https://ubuntu.com/server/docs/configuring-networks
 
 ## kvm
 
