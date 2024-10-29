@@ -8,6 +8,7 @@ https://llvm.org/pubs/2004-01-30-CGO-LLVM.html
 
 https://llvm.org/docs/GarbageCollection.html
 
+https://blog.yossarian.net/tags#llvm
 
 llvm type system 
 custom memory allocation
