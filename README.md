@@ -28,13 +28,21 @@ hardware-based trace cache
 
 automatic pool allocation instead of garbage collection
 
-# Linux
-## bridge network
+## Linux
+### bridge network
+https://www.cbtnuggets.com/blog/technology/networking/what-is-igmp-snooping
 Spanning Tree Protocol
 /etc/network
 https://ubuntu.com/server/docs/configuring-networks
+https://developers.redhat.com/blog/2018/10/22/introduction-to-linux-interfaces-for-virtual-networking#
+https://www.baeldung.com/linux/netplan-bridge-two-interfaces
+### qemu
 
-## kvm
+live migration https://www.linux-kvm.org/page/Migration
+
+
+
+### kvm
 
 virsh vs virt-manager
 
