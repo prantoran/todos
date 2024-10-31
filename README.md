@@ -8,7 +8,6 @@ https://llvm.org/pubs/2004-01-30-CGO-LLVM.html
 
 https://llvm.org/docs/GarbageCollection.html
 
-https://blog.yossarian.net/tags#llvm
 
 llvm type system 
 custom memory allocation
@@ -28,38 +27,35 @@ hardware-based trace cache
 
 automatic pool allocation instead of garbage collection
 
+## macos
+https://buaq.net/go-38839.html
+https://www.sentinelone.com/labs/fade-dead-adventures-in-reversing-malicious-run-only-applescripts/
+
+
 ## Linux
+https://www.baeldung.com/linux/hardware-enablement-hwe
+
 ### bridge network
-https://www.cbtnuggets.com/blog/technology/networking/what-is-igmp-snooping
 Spanning Tree Protocol
-/etc/network
-https://ubuntu.com/server/docs/configuring-networks
-https://developers.redhat.com/blog/2018/10/22/introduction-to-linux-interfaces-for-virtual-networking#
-https://www.baeldung.com/linux/netplan-bridge-two-interfaces
-### qemu
-
-live migration https://www.linux-kvm.org/page/Migration
-
-
 
 ### kvm
 
 virsh vs virt-manager
 
-### virsh
+#### virsh
 
 how to connect to server/vm using ssh
 
 
-## terminal
+### terminal
 https://dev.to/girordo/a-hands-on-guide-to-setting-up-zsh-oh-my-zsh-asdf-and-spaceship-prompt-with-zinit-for-your-development-environment-91n
 
 https://www.linuxtechi.com/how-to-install-kvm-on-ubuntu/
 
 
 
-## Network bridge
-
+### Network bridge
+https://www.naturalborncoder.com/2014/10/understanding-tun-tap-interfaces/
 https://linux.die.net/man/8/iptables
 
 https://www.howtogeek.com/177621/the-beginners-guide-to-iptables-the-linux-firewall/
@@ -74,10 +70,19 @@ https://man7.org/linux/man-pages/man7/netlink.7.html
 
 final distribution boards (FDBs), main distribution boards (MDBs), and virtual local area networks (VLANs)
 
-### virtual network veth0
+ip link set tap_interface master bridge_interface
+https://www.kernel.org/doc/html/latest/networking/ip-sysctl.html
+https://www.kernel.org/doc/html/latest/admin-guide/sysctl/net.html
+
+#### virtual network veth0
 https://superuser.com/questions/764986/howto-setup-a-veth-virtual-network
 
 https://man7.org/linux/man-pages/man4/veth.4.html
+
+### ip
+https://baturin.org/docs/iproute2/
+https://www.digitalocean.com/community/tutorials/how-to-use-iproute2-tools-to-manage-network-configuration-on-a-linux-vps
+https://paulgorman.org/technical/linux-iproute2-cheatsheet.html
 
 ### tcpdump
 
@@ -87,11 +92,11 @@ https://www.techtarget.com/searchnetworking/tutorial/How-to-capture-and-analyze-
 
 https://www.tcpdump.org/
 
-### nginx
+#### nginx
 
 http://nginx.org/en/docs/beginners_guide.html
 
-## dev tools
+### dev tools
 
 ### tmux
 
