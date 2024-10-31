@@ -31,10 +31,17 @@ automatic pool allocation instead of garbage collection
 https://buaq.net/go-38839.html
 https://www.sentinelone.com/labs/fade-dead-adventures-in-reversing-malicious-run-only-applescripts/
 
+## Build system
+
+ninja
+meson
 
 ## Linux
+/etc vs /usr/local/etc
+sed
+ldconfig
 https://www.baeldung.com/linux/hardware-enablement-hwe
-
+https://dnsmasq.org/doc.html
 ### bridge network
 Spanning Tree Protocol
 
@@ -43,9 +50,14 @@ Spanning Tree Protocol
 virsh vs virt-manager
 
 #### virsh
-
+https://wiki.archlinux.org/title/Libvirt#Using_polkit
 how to connect to server/vm using ssh
-
+https://documentation.ubuntu.com/server/how-to/virtualisation/libvirt/
+https://askubuntu.com/questions/1129936/how-to-edit-the-etc-libvirt-libvirt-conf-file
+https://www.libvirt.org/manpages/libvirtd.html
+https://gitlab.com/apparmor/apparmor/-/wikis/Libvirt
+https://www.libvirt.org/manpages/virtqemud.html\
+https://sumit-ghosh.com/posts/virtualization-hypervisors-explaining-qemu-kvm-libvirt/
 
 ### terminal
 https://dev.to/girordo/a-hands-on-guide-to-setting-up-zsh-oh-my-zsh-asdf-and-spaceship-prompt-with-zinit-for-your-development-environment-91n
