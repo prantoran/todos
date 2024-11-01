@@ -43,6 +43,12 @@ ninja
 meson
 
 ## Linux
+https://computer.howstuffworks.com/nat.htm
+https://en.wikipedia.org/wiki/ACPI
+https://en.wikipedia.org/wiki/Advanced_Programmable_Interrupt_Controller
+https://www.baeldung.com/linux/dynamic-kernel-module-support
+build-essential
+inux-headers
 NAT/PAT with nested KVM
 SOCKS routing
 Wireguard
