@@ -43,6 +43,9 @@ ninja
 meson
 
 ## Linux
+
+usr/sbin/update-ca-certificates
+
 cntlm NTP server
 https://computer.howstuffworks.com/nat.htm
 https://en.wikipedia.org/wiki/ACPI
