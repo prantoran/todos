@@ -1,4 +1,10 @@
 # todos
+https://volatilityfoundation.org/
+
+## python
+
+poetry
+
 
 
 ## llvm
@@ -37,6 +43,21 @@ ninja
 meson
 
 ## Linux
+NAT/PAT with nested KVM
+SOCKS routing
+Wireguard
+https://remnux.org/
+ufw firewall
+https://wiki.linuxfoundation.org/networking/iproute2
+https://medium.com/@eren.c.uysal/route-settings-linux-59e4353b6a9c#:~:text=The%20%2Fetc%2Fiproute2%2Frt_tables%20file%20is%20where%20IP%20routing%20tables,and%20use%20them%20to%20route%20different%20network%20traffic.
+http://linux-ip.net/html/routing-tables.html
+iptables vs netplan
+https://linuxconfig.org/how-to-use-bridged-networking-with-libvirt-and-kvm
+https://wiki.libvirt.org/Net.bridge.bridge-nf-call_and_sysctl.conf.html
+https://www.kernel.org/doc/html/latest/networking/ip-sysctl.html
+https://linuxconfig.org/how-to-turn-on-off-ip-forwarding-in-linux
+https://dustinspecker.com/posts/iptables-how-kubernetes-services-direct-traffic-to-pods/
+iptables
 /etc vs /usr/local/etc
 sed
 ldconfig
