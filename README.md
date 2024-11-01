@@ -43,6 +43,7 @@ ninja
 meson
 
 ## Linux
+cntlm NTP server
 https://computer.howstuffworks.com/nat.htm
 https://en.wikipedia.org/wiki/ACPI
 https://en.wikipedia.org/wiki/Advanced_Programmable_Interrupt_Controller
