@@ -43,6 +43,23 @@ ninja
 meson
 
 ## Linux
+https://www.baeldung.com/linux/network-interface-configure
+
+https://www.baeldung.com/linux/loopback-lo-device
+
+https://askubuntu.com/questions/247625/what-is-the-loopback-device-and-how-do-i-use-it
+
+https://developers.redhat.com/blog/2018/10/22/introduction-to-linux-interfaces-for-virtual-networking
+
+https://www.devgem.io/posts/understanding-fread-and-handling-line-endings-in-c
+
+https://dnsmasq.org/doc.html
+
+### virtualbox
+
+https://www.virtualbox.org/manual/ch09.html#changenat
+
+
 
 usr/sbin/update-ca-certificates
 
