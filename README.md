@@ -1,4 +1,4 @@
-
+https://fasterthanli.me/series/making-our-own-executable-packer/part-17
 
 ```bash
 pip install pefile
