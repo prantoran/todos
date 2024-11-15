@@ -1,5 +1,8 @@
 https://fasterthanli.me/series/making-our-own-executable-packer/part-17
 
+https://github.com/W4RH4WK/Debloat-Windows-10
+
+
 # todos
 https://volatilityfoundation.org/
 
