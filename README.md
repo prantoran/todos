@@ -2,6 +2,10 @@ https://fasterthanli.me/series/making-our-own-executable-packer/part-17
 
 https://github.com/W4RH4WK/Debloat-Windows-10
 
+https://www.doomedraven.com/2016/05/kvm.html
+
+
+
 
 # todos
 https://volatilityfoundation.org/
