@@ -4,7 +4,14 @@ https://github.com/W4RH4WK/Debloat-Windows-10
 
 https://www.doomedraven.com/2016/05/kvm.html
 
-
+cmake -S llvm -B build -G Ninja \
+	-DLLVM_INSTALL_UTILS=ON \
+	-DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lldb;polly;cross-project-tests" \
+	-DCMAKE_INSTALL_PREFIX=/usr/local \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DLLVM_USE_LINKER=lld \
+	-DLLVM_PARALLEL_COMPILE_JOBS=4 \
+	-DLLVM_PARALLEL_LINK_JOBS=4 
 
 
 # todos
