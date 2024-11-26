@@ -360,6 +360,7 @@ compiler.
 
 # Installed binaries in /usr/local/bin
 
+```bash
 clang-installapi
 find-all-symbols
 ld64.lld
@@ -441,7 +442,7 @@ llvm-tli-checker
 llvm-undname
 llvm-windres
 llvm-xray
-
+```
 
 
 
