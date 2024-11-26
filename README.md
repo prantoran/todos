@@ -1,3 +1,22 @@
+CMake Error at CMakeLists.txt:126 (message):
+  llvm-gtest not found.  Please install llvm-gtest or disable tests with
+  -DLLVM_INCLUDE_TESTS=OFF
+
+build_llvm=`pwd`/llvm-project-llvmorg-19.1.3/build
+build_clang=`pwd`/build-clang
+installprefix=/usr/local
+llvm=`pwd`/llvm-project-llvmorg-19.1.3
+mkdir -p $build_llvm
+mkdir -p $installprefix
+
+
+
+cmake -G Ninja -S $llvm/clang -B $build_clang \
+      -DLLVM_EXTERNAL_LIT=$build_llvm/utils/lit \
+      -DLLVM_ROOT=$installprefix \
+      -DLLVM_INCLUDE_TESTS=OFF
+ninja -C $build_clang
+
 https://fasterthanli.me/series/making-our-own-executable-packer/part-17
 
 https://github.com/W4RH4WK/Debloat-Windows-10
