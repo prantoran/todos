@@ -40,7 +40,7 @@ https://volatilityfoundation.org/
 
 poetry
 
-
+https://docs.pydantic.dev/latest/concepts/models/
 
 ## llvm
 DWARF debugging information
