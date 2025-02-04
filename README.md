@@ -1,3 +1,7 @@
+https://ai-on-openshift.io/tools-and-applications/mlflow/mlflow/
+https://www.redhat.com/en/blog/serving-machine-learning-models-on-openshift-part-1
+
+
 CMake Error at CMakeLists.txt:126 (message):
   llvm-gtest not found.  Please install llvm-gtest or disable tests with
   -DLLVM_INCLUDE_TESTS=OFF
