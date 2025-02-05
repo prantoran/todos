@@ -1,3 +1,8 @@
+pydantic
+python-dotenv
+tenacity
+boto3
+
 https://ai-on-openshift.io/tools-and-applications/mlflow/mlflow/
 https://www.redhat.com/en/blog/serving-machine-learning-models-on-openshift-part-1
 
