@@ -1,6 +1,6 @@
-pydantic
-
-python-dotenv
+https://nextjs.org/docs/pages/api-reference/functions/use-router
+https://docs.pydantic.dev/latest/concepts/models/#validating-data
+https://realpython.com/python-pydantic/
 
 tenacity
 
