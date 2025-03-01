@@ -1,3 +1,9 @@
+https://github.com/deepseek-ai/3FS
+
+duckdb
+
+
+
 https://nextjs.org/docs/pages/api-reference/functions/use-router
 
 https://docs.pydantic.dev/latest/concepts/models/#validating-data
