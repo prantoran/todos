@@ -52,7 +52,13 @@ https://gitlab.com/qemu-project/qemu/-/blob/master/block/export/fuse.c#L288
 https://github.com/bsbernd/libfuse/tree/uring/
 https://docs.kernel.org/filesystems/fuse-io-uring.html
 ```
+aio thread pools in glibc
+ 
 mmap
+
+https://kernel.dk/systor13-final18.pdf
+
+ mlock()
 
  network storage protocol is NVMe/TCP
 
