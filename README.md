@@ -1,6 +1,7 @@
 compile qemu from source
 ```bash
 idea: excessive io should slow down vms since io_uring not yet implemetned
+https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=io_uring
 https://windows-internals.com/ioring-vs-io_uring-a-comparison-of-windows-and-linux-implementations/
 https://windows-internals.com/one-i-o-ring-to-rule-them-all-a-full-read-write-exploit-primitive-on-windows-11/
 https://windows-internals.com/one-year-to-i-o-ring-what-changed/
