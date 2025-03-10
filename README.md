@@ -1,3 +1,55 @@
+compile qemu from source
+
+idea: excessive io should slow down vms since io_uring not yet implemetned
+https://windows-internals.com/ioring-vs-io_uring-a-comparison-of-windows-and-linux-implementations/
+https://windows-internals.com/one-i-o-ring-to-rule-them-all-a-full-read-write-exploit-primitive-on-windows-11/
+https://windows-internals.com/one-year-to-i-o-ring-what-changed/
+https://windows-internals.com/an-exercise-in-dynamic-analysis/
+
+https://wiki.qemu.org/Google_Summer_of_Code_2025
+
+https://michael2012z.medium.com/tracing-in-qemu-8df4e4beaf1b
+https://qemu-project.gitlab.io/qemu/devel/tracing.html
+https://gist.github.com/mcastelino/b31f0648707b25478eb2a44f94a861fd
+syslog vs stdio vs ftrace
+https://www.qemu.org/docs/master/devel/tracing.html
+
+https://opensource.googleblog.com/2023/06/rust-fact-vs-fiction-5-insights-from-googles-rust-journey-2022.html
+rust-vmm
+virtqueue implementation in rust-vmm
+VirtIO specification
+use `vm-virtio` crate
+https://github.com/model-checking/kani/
+https://model-checking.github.io/kani-verifier-blog/
+https://model-checking.github.io/verify-rust-std/intro.html
+https://github.com/rust-vmm/vm-virtio/pull/324
+https://github.com/rust-vmm/vm-virtio
+https://github.com/firecracker-microvm/firecracker/blob/4bbbec06ee0d529add07807f75d923cc3d3cd210/src/vmm/src/devices/virtio/queue.rs#L1006
+https://github.com/firecracker-microvm/firecracker/blob/4bbbec06ee0d529add07807f75d923cc3d3cd210/src/vmm/src/devices/virtio/queue.rs#L966
+https://fosdem.org/2025/schedule/event/fosdem-2025-5930-hunting-virtio-specification-violations/
+https://archive.fosdem.org/2024/schedule/event/fosdem-2024-1910-making-virtio-sing-implementing-virtio-sound-in-rust-vmm-project/
+
+QEMU's FUSE export type 
+FUSE-over-io_uring
+fdisk
+dd
+libfuse's FUSE device file descriptor handling APIs (fuse_session_fd(), fuse_session_receive_buf(), etc) to read(2)/write(2)
+FUSE-over-io_uring support
+Benchmark with and without FUSE-over-io_uring using the fio(1) tool
+Add support for multiple in-flight requests and multiple IOThreads
+https://gitlab.com/qemu-project/qemu/-/blob/master/block/export/fuse.c#L288
+https://github.com/bsbernd/libfuse/tree/uring/
+https://docs.kernel.org/filesystems/fuse-io-uring.html
+
+
+https://developers.redhat.com/articles/2024/09/05/scaling-virtio-blk-disk-io-iothread-virtqueue-mapping#
+http://blog.vmsplice.net/2024/01/key-value-stores-foundation-of-file.html
+http://blog.vmsplice.net/2024/01/qemu-aiocontext-removal-and-how-it-was.html
+http://blog.vmsplice.net/2024/01/storage-literature-notes-on-free-space.html
+
+https://www.brendangregg.com/blog/2011-10-15/using-systemtap.html
+
+
 https://github.com/deepseek-ai/3FS
 
 duckdb
