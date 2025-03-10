@@ -68,6 +68,7 @@ device mapper
 
 Ext4 vx XFS
 
+https://notes.rdu.im/
 
 https://developers.redhat.com/articles/2024/09/05/scaling-virtio-blk-disk-io-iothread-virtqueue-mapping#
 http://blog.vmsplice.net/2024/01/key-value-stores-foundation-of-file.html
