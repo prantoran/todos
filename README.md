@@ -52,6 +52,16 @@ https://gitlab.com/qemu-project/qemu/-/blob/master/block/export/fuse.c#L288
 https://github.com/bsbernd/libfuse/tree/uring/
 https://docs.kernel.org/filesystems/fuse-io-uring.html
 ```
+mmap
+
+ network storage protocol is NVMe/TCP
+
+ Block Device vs char device
+
+device mapper
+
+Ext4 vx XFS
+
 
 https://developers.redhat.com/articles/2024/09/05/scaling-virtio-blk-disk-io-iothread-virtqueue-mapping#
 http://blog.vmsplice.net/2024/01/key-value-stores-foundation-of-file.html
