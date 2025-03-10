@@ -6,6 +6,11 @@ https://windows-internals.com/ioring-vs-io_uring-a-comparison-of-windows-and-lin
 https://windows-internals.com/one-i-o-ring-to-rule-them-all-a-full-read-write-exploit-primitive-on-windows-11/
 https://windows-internals.com/one-year-to-i-o-ring-what-changed/
 https://windows-internals.com/an-exercise-in-dynamic-analysis/
+
+https://news.ycombinator.com/item?id=22729461
+https://www.kernel.org/doc/html/v5.8/filesystems/caching/operations.html
+https://sumofbytes.com/blog/understanding-asynchronous-in-linux-io-uring
+
 ```
 https://wiki.qemu.org/Google_Summer_of_Code_2025
 
