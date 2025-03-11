@@ -53,6 +53,10 @@ https://github.com/bsbernd/libfuse/tree/uring/
 https://docs.kernel.org/filesystems/fuse-io-uring.html
 https://cloudflare.tv/shows/low-level-linux/missing-manuals-io-uring-worker-pool/5vplD9vP
 https://kernel.dk/io_uring.pdf
+https://unixism.net/loti/async_intro.html
+https://developers.redhat.com/articles/2023/04/12/why-you-should-use-iouring-network-io
+https://linux-kernel-labs.github.io/refs/heads/master/labs/device_drivers.html
+
 ```
 aio thread pools in glibc
  
