@@ -51,6 +51,8 @@ Add support for multiple in-flight requests and multiple IOThreads
 https://gitlab.com/qemu-project/qemu/-/blob/master/block/export/fuse.c#L288
 https://github.com/bsbernd/libfuse/tree/uring/
 https://docs.kernel.org/filesystems/fuse-io-uring.html
+https://cloudflare.tv/shows/low-level-linux/missing-manuals-io-uring-worker-pool/5vplD9vP
+https://kernel.dk/io_uring.pdf
 ```
 aio thread pools in glibc
  
@@ -65,6 +67,13 @@ https://kernel.dk/systor13-final18.pdf
  Block Device vs char device
 
 device mapper
+
+ select, poll, epoll or kqueue
+
+
+ kernel-bypass and shared memory to reduce context switches and data copying overhead
+
+
 
 Ext4 vx XFS
 
