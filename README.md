@@ -1,3 +1,11 @@
+https://qemu-project.gitlab.io/qemu/devel/tracing.html
+
+https://lore.kernel.org/qemu-devel/17ad81c3-98fc-44c2-8f65-f5e2cc07030b@gnu.org/T/#u
+
+rust-vmm project
+
+https://fasterthanli.me/series/making-our-own-executable-packer/part-1
+
 compile qemu from source
 ```bash
 idea: excessive io should slow down vms since io_uring not yet implemetned
