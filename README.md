@@ -1,3 +1,77 @@
+```bash
+virtio bus
+ioctl
+how kernel detects devices on the pci bus
+virtio driver probe
+semaphores, mutexes
+qcow2 disk image format
+qemu  device driver
+ex3 vs ntfs
+qcow2 zero cluster
+LUKS format
+aes-256
+xts cipher mode
+PBKDF algorithm
+btrfs
+Zoned block devices
+FAT32 partition
+SAMBA or NFS
+Network Block Device protocol         
+iSCSI   header-digest = "CRC32C"
+sftp-server protocol
+vfio-pci driver
+/sys/bus/pci/devices
+sys/bus/pci/drivers/vfio-pci
+Open File Descriptor (OFD) locking API
+POSIX locking API
+virtio-9p-device
+vnc vs spice
+https://docs.cilium.io/en/latest/reference-guides/bpf/index.html
+tty vs pty
+Nagle buffering algorithm
+NUMA 
+Linux virtio device discovery
+https://diveintosystems.org/book/index.html
+https://diveintosystems.org/book/C11-MemHierarchy/caching.html
+https://ctf.re/kernel/pcie/tutorial/dma/mmio/tlp/2024/03/26/pcie-part-2/
+https://msk4.com/code/2020/11/10/memory-mapped-io-adventure.html
+PCIe link layer
+building PCIe devices with FPGAs
+PCI-SIG PCI Express Base Specification
+open USB specification
+USB XHCI protocol
+PCIe TLP
+ethernet switch
+VirtIO serial driver
+Virtio Balloon Driver
+https://learn.microsoft.com/en-us/shows/defrag-tools/
+Extended Configuration Access Management
+https://i.blackhat.com/Asia-22/Thursday-Materials/AS-22-Qiuhao-Recursive-MMIO-final.pdf
+https://ctf.re/kernel/pcie/tutorial/dma/mmio/tlp/2024/03/26/pcie-part-2/
+https://lttng.org/
+dtrace vs ftrace vs syslog
+LTTng Userspace Tracer
+QAPI and async (block devices)
+ Rust pl011 device model
+rust/qemu-api
+rust unsafe code
+GPIO pins
+meosn ninja clippy rustfmt rustdoc
+https://lists.nongnu.org/archive/html/qemu-rust/2024-12/msg00006.html
+Cell and RefCell that support the "big QEMU lock"
+pl011 and HPET device models
+C structs for QOM classes
+Rust qdev bindings in QEMU
+qemu vmstate
+rust `vm-memory` vm-virtio `rustc-web crate
+rust `pinned-init crate
+qemu-api and qemu-api-macros crates
+callbacks in  qemu-api crate
+https://docs.rs/bitflags/2.6.0/bitflags/
+rust impl Trait
+
+```
+
 https://qemu-project.gitlab.io/qemu/devel/tracing.html
 
 https://lore.kernel.org/qemu-devel/17ad81c3-98fc-44c2-8f65-f5e2cc07030b@gnu.org/T/#u
