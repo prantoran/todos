@@ -1,4 +1,12 @@
 ```bash
+BlockExportOptions: https://gitlab.com/qemu-project/qemu/-/blob/master/qapi/block-export.json#L345-402
+- Not sure yet how this is used to build [#include "qapi/qapi-types-block-export.h"]
+BlockDriverState : https://gitlab.com/qemu-project/qemu/-/blob/master/include/block/block_int-common.h#L1069-1257
+AioContext: https://gitlab.com/qemu-project/qemu/-/blob/master/include/block/aio.h#L130-258
+block/io_uring.c: https://gitlab.com/qemu-project/qemu/-/blob/master/block/io_uring.c
+```
+
+```bash
 virtio bus
 ioctl
 how kernel detects devices on the pci bus
