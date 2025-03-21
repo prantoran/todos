@@ -1,3 +1,5 @@
+https://www.qemu.org/docs/master/devel/submitting-a-patch.html
+
 ```bash
 BlockExportOptions: https://gitlab.com/qemu-project/qemu/-/blob/master/qapi/block-export.json#L345-402
 - Not sure yet how this is used to build [#include "qapi/qapi-types-block-export.h"]
