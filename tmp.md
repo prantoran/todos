@@ -1,797 +1,262 @@
-Got it! I will compile a comprehensive review of over 50 anti-sandbox and anti-virtual machine techniques, focusing on both emerging and well-known methods. The report will be structured into categories such as CPU-based, memory-based, API monitoring, and more. Each technique will include detailed implementation in C/C++ for Windows whenever possible, along with practical mitigation strategies for both security researchers and developers.
-
-I'll notify you once the research is complete.
+Great, I’ll prepare a detailed 2-month preparation and setup plan for the QEMU GSoC project on FUSE over io_uring. This will include:
+
+- Learning path for Linux internals, FUSE, and io_uring.
+- Setting up the development and benchmarking environment for QEMU on Ubuntu 24.04.
+- Recommended PC hardware configuration for reliable compilation and virtualization.
+- Step-by-step instructions for building QEMU, running benchmarks, and profiling changes.
+- Focused support on your first 1–2 deliverables to help build early credibility in the project.
+
+I’ll get back to you shortly with everything organized in a clear format.
+
+# Preparation Plan for GSoC Project: **QEMU “FUSE over io_uring”** (2 Months)
+
+## Learning Roadmap (Weeks 1–4)  
+Begin by strengthening your understanding of the key technologies involved. Dedicate the first month to study **FUSE**, **io_uring**, **Linux VFS**, the **QEMU storage (block) layer**, and general **asynchronous I/O** patterns in Linux. Use this time to read documentation, review example code, and experiment with small programs to internalize concepts:
+
+- **Filesystem in Userspace (FUSE)** – Learn how the kernel forwards filesystem operations to a userspace daemon. FUSE allows implementing a filesystem in user space via a kernel module that acts as a bridge to kernel interfaces ([Filesystem in Userspace - Wikipedia](https://en.wikipedia.org/wiki/Filesystem_in_Userspace#:~:text=Filesystem%20in%20Userspace%20,to%20the%20actual%20kernel%20interfaces)). This means file operations (open, read, write, etc.) from processes are handed by the kernel VFS to the FUSE module, which then communicates with a user-space handler program. **Tasks/Resources:**  
+  - Read the [FUSE Wikipedia](https://en.wikipedia.org/wiki/Filesystem_in_Userspace) article and kernel documentation to understand the basic architecture. The figure below illustrates how a user-space process (left) making a request (e.g. `ls -l /tmp/fuse`) triggers the kernel’s VFS to call into the FUSE driver, which then passes the request to a user-space filesystem daemon (right) that implements the actual operation ([Filesystem in Userspace - Wikipedia](https://en.wikipedia.org/wiki/Filesystem_in_Userspace#:~:text=ImageA%20flow,that%20originally%20made%20the%20request)). This round-trip explains the extra context switches and overhead in FUSE.  
+   ([Filesystem in Userspace - Wikipedia](https://en.wikipedia.org/wiki/Filesystem_in_Userspace#:~:text=ImageA%20flow,that%20originally%20made%20the%20request)) ([image]()) *Figure: FUSE architecture – the kernel module (green) forwards VFS calls from applications to a user-space handler via /dev/fuse, incurring context switches.*  
+  - Install **libfuse3** on your system and try a simple FUSE example (for instance, the “hello world” filesystem from libfuse). Observe how mounting a FUSE filesystem involves running a userspace daemon. Use `strace` to trace system calls and see the communication over `/dev/fuse`.  
+  - Understand the performance implications. Each filesystem operation in FUSE typically involves at least two context switches (user→kernel and back) plus data copying overhead. Read the Linux kernel mailing list discussion or patch notes on *fuse-over-io_uring* for performance motivation – the goal is to reduce context switches by using shared memory and batched syscalls ([fuse: fuse-over-io-uring [LWN.net]](https://lwn.net/Articles/997400/#:~:text=Motivation%20for%20these%20patches%20is,uring%2C%20but%20through%20ioctl%20IOs)) ([fuse: fuse-over-io-uring [LWN.net]](https://lwn.net/Articles/997400/#:~:text=This%20cache%20line%20bouncing%20should,for%20example%20either%20with%20IORING_SETUP_SQPOLL)). These notes explain that fuse-over-io_uring will avoid bouncing requests between cores and cut the number of kernel/user context switches roughly in half by consolidating request submission and completion into one step ([fuse: fuse-over-io-uring [LWN.net]](https://lwn.net/Articles/997400/#:~:text=This%20cache%20line%20bouncing%20should,for%20example%20either%20with%20IORING_SETUP_SQPOLL)).  
+
+- **io_uring** – Study Linux’s modern asynchronous I/O interface. io_uring (introduced in Linux 5.1) uses shared ring buffers between user space and the kernel to submit and complete I/O without a syscall per operation ([Optimizing Proxmox: iothreads, aio, & io_uring | Blockbridge Knowledgebase](https://kb.blockbridge.com/technote/proxmox-aio-vs-iouring/#:~:text=Io,without%20serializing%20QEMU%E2%80%99s%20centralized%20scheduler)). It is designed for higher performance than older Linux AIO (which had limitations and could block for certain I/O) ([io_uring by example: Part 1 – Introduction – Unixism](https://unixism.net/2020/04/io-uring-by-example-part-1-introduction/#:~:text=processes%20or%20threads,interface)) ([Features/IOUring - QEMU](https://wiki.qemu.org/Features/IOUring#:~:text=io_uring%20is%20a%20Linux%20API,AIO%20API%20that%20QEMU%20supports)). **Tasks/Resources:**  
+  - Read an introductory blog or the `io_uring` man page to learn how it works. In brief, an io_uring instance sets up two circular ring buffers in shared memory: a **submission queue (SQ)** that the application fills with I/O requests, and a **completion queue (CQ)** that the kernel uses to post completions ([Why you should use io_uring for network I/O | Red Hat Developer](https://developers.redhat.com/articles/2023/04/12/why-you-should-use-iouring-network-io#:~:text=,user%20space%20and%20the%20kernel)). The figure below shows this mechanism: the application adds requests to the tail of the SQ, the kernel picks them up and processes them, then writes results to the CQ for the application to read ([Why you should use io_uring for network I/O | Red Hat Developer](https://developers.redhat.com/articles/2023/04/12/why-you-should-use-iouring-network-io#:~:text=,I%2FO%C2%A0operations%20back%20to%20user%20space)).  
+   ([Why you should use io_uring for network I/O | Red Hat Developer](https://developers.redhat.com/articles/2023/04/12/why-you-should-use-iouring-network-io#:~:text=,user%20space%20and%20the%20kernel)) ([Why you should use io_uring for network I/O | Red Hat Developer](https://developers.redhat.com/articles/2023/04/12/why-you-should-use-iouring-network-io)) *Figure: io_uring uses shared memory ring buffers for async I/O. The app adds requests to the Submission Queue tail, the kernel consumes them and posts results to the Completion Queue. This avoids per-I/O syscalls by batching work in memory.*  
+  - Try a small C program using **liburing** to solidify your understanding. For example, write a program that reads a file using io_uring instead of `read()`. This will familiarize you with submission queue entries (SQEs) and completion queue entries (CQEs).  
+  - Read about advanced io_uring features like submission polling and fixed buffers, since these might relate to performance optimizations for FUSE. (You don’t need to master them immediately, but be aware of them.)  
+
+- **Linux VFS (Virtual File System)** – The VFS is the kernel layer that provides a common file operation interface to user programs, abstracting different filesystems. It’s “the glue between user requests and filesystem-specific implementations” ([Introduction to the Linux Virtual Filesystem (VFS): A High-Level Tour — Star Lab Software](https://www.starlab.io/blog/introduction-to-the-linux-virtual-filesystem-vfs-part-i-a-high-level-tour#:~:text=The%20Linux%20variant%20of%20this,coexist%20in%20a%20unified%20namespace)) ([Introduction to the Linux Virtual Filesystem (VFS): A High-Level Tour — Star Lab Software](https://www.starlab.io/blog/introduction-to-the-linux-virtual-filesystem-vfs-part-i-a-high-level-tour#:~:text=The%20VFS%20is%20sandwiched%20between,From%20a%20high)). A solid grasp of VFS will help you understand how FUSE hooks into the kernel. **Tasks/Resources:**  
+  - Read high-level overviews of the Linux VFS (for example, “Overview of the Linux VFS” in kernel docs or a relevant LWN article). Key concepts include superblocks, inodes, dentries, file operations, and how system calls like `open()` and `read()` traverse the VFS before reaching a specific filesystem driver.  
+  - Focus on how VFS interacts with FUSE: for instance, when an open/read happens on a FUSE mount, VFS calls the FUSE driver’s `->open` or `->read` implementation, which then enqueues a request to the FUSE user daemon. Understanding this flow will clarify where the io_uring-based mechanism will plug in.  
+  - If possible, glance at the Linux source (`fs/fuse/` directory) to see how FUSE requests are queued and how the ioctl or `read()/write()` on `/dev/fuse` works. You don’t need to absorb every detail, but mapping out the call flow will help when implementing changes.  
+
+- **QEMU Block Layer & Virtio-FS** – Familiarize yourself with QEMU’s storage architecture, as well as how virtio-fs is implemented. The QEMU **block layer** handles virtual disks and files: it supports many backends (raw files, qcow2, network storage, etc.) and performs asynchronous I/O via an event loop and threads. QEMU can use Linux AIO or io_uring as the async engine for disk I/O ([](https://kvm-forum.qemu.org/2020/KVMForum_2020_io_uring_passthrough_Stefano_Garzarella.pdf#:~:text=%E2%97%8F%20QEMU%205,IORING_OP_WRITEV%20%E2%97%8F%20IORING_OP_READV%20%E2%97%8F%20IORING_OP_FSYNC)). **Tasks/Resources:**  
+  - Read QEMU’s documentation on its block layer (for example, “QEMU Block Drivers” and Stefan Hajnoczi’s blog posts or slides on QEMU block layer concepts). Understand terms like **AioContext**, **BlockDriverState**, and how QEMU dispatches I/O requests from a virtual device (e.g., virtio-blk or virtio-fs) to the host. QEMU 5.0 added support for io_uring as an AIO backend, used via `-drive aio=io_uring` in VM options ([](https://kvm-forum.qemu.org/2020/KVMForum_2020_io_uring_passthrough_Stefano_Garzarella.pdf#:~:text=%E2%97%8F%20QEMU%205,IORING_OP_WRITEV%20%E2%97%8F%20IORING_OP_READV%20%E2%97%8F%20IORING_OP_FSYNC)) ([Features/IOUring - QEMU](https://wiki.qemu.org/Features/IOUring#:~:text=io_uring%20is%20an%20alternative%20AIO,drive%20aio%3Dio_uring)). This indicates QEMU already has some io_uring integration in its block subsystem, which is a useful reference for integrating io_uring with FUSE.  
+  - Learn how **virtio-fs** works. Virtio-fs uses a vhost-user backend (a separate process called **virtiofsd**) that implements a FUSE server. The guest VM communicates with virtiofsd (over a Unix domain socket) to perform file operations on a shared host directory. Most virtio-fs code runs in this userspace daemon, not inside QEMU itself ([virtiofs - shared file system for virtual machines / Standalone usage](https://virtio-fs.gitlab.io/howto-qemu.html#:~:text=QEMU%204,in%20virtiofsd%20instead%20of%20QEMU)) ([virtiofs - shared file system for virtual machines / Standalone usage](https://virtio-fs.gitlab.io/howto-qemu.html#:~:text=Building%20virtiofsd)). Knowing this, plan to familiarize yourself with virtiofsd’s code as well (see below).  
+  - **Browse the virtiofsd source**: The legacy C version of virtiofsd was included in QEMU’s source (`tools/virtiofsd`), but has been replaced by a Rust implementation ([
+      FS#76352 : [qemu] Consider replacing qemu-virtiofsd with new Rust version
+    ](https://bugs.archlinux.org/task/76352#:~:text=,and%20moving%20should%20be%20simple)). New development (like FUSE over io_uring) likely targets the Rust virtiofsd. Even if you haven’t used Rust before, skim the virtiofsd repository (gitlab.com/virtio-fs/virtiofsd) to see how it handles FUSE requests (look for where `/dev/fuse` is read/written). This will hint at how to integrate io_uring—perhaps by using the new **IORING_OP_URING_CMD** operation in place of read/write on the fuse device ([fuse: fuse-over-io-uring [LWN.net]](https://lwn.net/Articles/997400/#:~:text=This%20adds%20support%20for%20uring,are%20still%20to%20be%20expected)). You might also read the **libfuse** documentation, since virtiofsd uses libfuse to simplify FUSE protocol handling.  
+
+- **Asynchronous I/O Patterns in Linux** – Since this project is about asynchronous I/O, review how Linux handles async operations traditionally vs. with io_uring. **Tasks/Resources:**  
+  - Compare classic **blocking I/O**, **multi-threading**, **non-blocking with epoll**, and **Linux AIO (io_submit)**. For example, QEMU historically offered `aio=threads` (which delegates I/O to a thread pool) and `aio=native` (Linux AIO) for disk I/O. Each approach has trade-offs in latency and throughput.  
+  - Read an article on why Linux’s older AIO was insufficient (e.g. it only worked with O_DIRECT and still had system call overhead for completions ([io_uring by example: Part 1 – Introduction – Unixism](https://unixism.net/2020/04/io-uring-by-example-part-1-introduction/#:~:text=processes%20or%20threads,interface))). This context will highlight how io_uring’s design (submission/completion rings) is superior in avoiding kernel transitions ([Optimizing Proxmox: iothreads, aio, & io_uring | Blockbridge Knowledgebase](https://kb.blockbridge.com/technote/proxmox-aio-vs-iouring/#:~:text=Io,without%20serializing%20QEMU%E2%80%99s%20centralized%20scheduler)).  
+  - Understand **io_uring in the kernel**: The new `IORING_OP_URING_CMD` was introduced to let subsystems (like FUSE) use io_uring as a transport. Essentially, the FUSE driver can register an io_uring command with the kernel, so that FUSE user daemons can submit requests via an io_uring interface rather than reading /dev/fuse ([fuse: fuse-over-io-uring [LWN.net]](https://lwn.net/Articles/997400/#:~:text=This%20adds%20support%20for%20uring,are%20still%20to%20be%20expected)). For deeper insight, you can read the fuse-over-io_uring RFC patch cover letter on the linux-fsdevel list ([fuse: fuse-over-io-uring [LWN.net]](https://lwn.net/Articles/997400/#:~:text=Motivation%20for%20these%20patches%20is,uring%2C%20but%20through%20ioctl%20IOs)), which explains the motivation and approach. In short, *fuse-over-io_uring* uses shared buffers and avoids separate read/write syscalls for each FUSE message, aiming to significantly reduce context switch overhead and cache line bouncing between kernel and user ([fuse: fuse-over-io-uring [LWN.net]](https://lwn.net/Articles/997400/#:~:text=This%20cache%20line%20bouncing%20should,for%20example%20either%20with%20IORING_SETUP_SQPOLL)).  
+  - As an exercise, diagram the difference between the current FUSE workflow and the proposed io_uring workflow. This will help you internalize what you’ll implement. The current workflow: **guest I/O -> virtiofsd -> libfuse -> /dev/fuse (read request, process, write reply) -> kernel**. The new workflow will replace the read/write on /dev/fuse with submitting an SQE and getting a CQE, which should be faster.  
+
+By the end of the first 3–4 weeks, you should be comfortable with these concepts. You don’t need to have mastered everything, but you should know how pieces fit together (for instance, what part of the stack each technology occupies, and how data flows when a guest reads a file from a virtio-fs share). Keep notes of important resources or references as you’ll refer back during implementation. 
+
+## Development Environment Setup (Week 1)  
+Setting up a robust development environment on your Ubuntu 24.04 LTS machine is crucial. This includes installing all dependencies, building QEMU from source, and preparing tools for editing and debugging. Follow these steps to configure your environment:
+
+1. **System Update and Required Packages:** Update your system and install general build tools. You’ll need Git, a C compiler (gcc/clang), Python3, and others. On Ubuntu/Debian, a convenient way is:  
+   ```bash
+   sudo apt update && sudo apt install build-essential git python3 pkg-config ninja-build meson libglib2.0-dev
+   ```  
+   (Ubuntu 24.04 may already include Meson and Ninja; if not, this command installs them. Meson is QEMU’s build system generator and Ninja will compile the code.)  
+
+2. **QEMU Build Dependencies:** Install all libraries that QEMU may require. QEMU has many optional features; for our purposes, we need at least **GLib 2.x**, **Pixman**, **zlib**, **SDL2** (if you want graphical output), **liburing**, and **libfuse**. The QEMU docs recommend using your package manager to get build deps:  
+   ```bash
+   sudo apt build-dep qemu
+   ```  
+   This will pull in the necessary development libraries for the QEMU version packaged in Ubuntu ([Setup build environment — QEMU  documentation](https://www.qemu.org/docs/master/devel/build-environment.html#:~:text=You%20first%20need%20to%20enable,use%20apt%20to%20install%20dependencies)). Additionally, verify the following are installed, as they are specifically relevant:  
+   - **liburing-dev** – to enable io_uring support in QEMU (for block I/O and our fuse project)  
+   - **libfuse3-dev** – to enable FUSE-related features. QEMU’s configure has an `--enable-fuse` flag to build FUSE block exports ([QEMU Storage Daemon - DEV Community](https://dev.to/amarjargal/qemu-storage-daemon-nm9#:~:text=sudo%20apt%20install%20libfuse3)), which requires libfuse3. Even if working with virtiofsd separately, having this allows you to experiment with QEMU’s FUSE export feature as well.  
+   - **libaio-dev**, **libcap-ng-dev**, **libattr1-dev** – (optional, for Linux AIO, security, etc., often included by build-dep).  
+   - **Meson and Ninja** – as noted, ensure you have recent versions (Meson ≥0.61). Ubuntu 24.04 should have a new enough Meson, but if not, you can `pip3 install --user meson ninja`.  
+
+3. **Cloning QEMU Source:** Fetch the QEMU source code from the official repository. It’s recommended to work with the latest upstream (`master` branch) for GSoC projects:  
+   ```bash
+   git clone https://gitlab.com/qemu-project/qemu.git
+   cd qemu
+   git submodule update --init --recursive
+   ```  
+   Using the latest code ensures you have any recent virtio-fs or io_uring improvements (and fewer merge conflicts later). The submodule command pulls dependencies like edk2 (for firmware), which might not be strictly needed for our work but it’s good practice.  
+
+4. **Configuring the Build (Meson):** Create a build directory and configure QEMU. For development, enable debug symbols and disable optimizations for easier debugging. Also, include options relevant to our project:  
+   ```bash
+   mkdir build && cd build
+   meson setup -Dbuildtype=debug -Dfuse_export=enabled -Ddebug-info=enabled -Doptimization=0 \
+               -Ddefault_library=static ..
+   ```  
+   Some notes: the `-Dfuse_export=enabled` corresponds to `--enable-fuse` in the old configure script (enables QEMU’s FUSE block export) ([QEMU Storage Daemon - DEV Community](https://dev.to/amarjargal/qemu-storage-daemon-nm9#:~:text=sudo%20apt%20install%20libfuse3)). This isn’t directly for virtio-fs, but it compiles in code that may be informative and is a good sanity check that libfuse is found. We also request static libraries to simplify profiling (optional). Meson will detect liburing and enable io_uring support automatically if found; watch the output to make sure it says “io_uring support: YES”. If it says NO, install/update **liburing-dev** and re-run meson.  
+
+5. **Building QEMU:** Compile the code using Ninja:  
+   ```bash
+   ninja -C build -j$(nproc)
+   ```  
+   This will take a while on first build (QEMU is large). With a multi-core CPU and enough RAM (see Hardware section), you can parallelize with `-j`. After it finishes, you should have QEMU binaries (e.g. `build/qemu-system-x86_64`). You can run `build/qemu-system-x86_64 --version` to confirm the build was successful. 
+
+6. **Setting Up virtiofsd (if needed):** Since virtiofsd (the FUSE daemon for virtio-fs) is a separate project in Rust, you’ll want to set that up too, as our feature likely involves modifying it:  
+   - Install Rust toolchain (via `rustup`) if not already available. Rust 1.60+ should be fine.  
+   - Clone the virtiofsd repo:  
+     ```bash
+     git clone https://gitlab.com/virtio-fs/virtiofsd.git
+     cd virtiofsd
+     cargo build --release
+     ```  
+   - This produces `target/release/virtiofsd`. We’ll use this binary to test virtio-fs. (If building or modifying virtiofsd, you can run `cargo build` without `--release` to get a debug build which is easier to debug).  
+   *Note:* The Rust virtiofsd is now the primary, but if you or your mentors prefer working with the older C virtiofsd (which might be simpler C but is deprecated ([
+      FS#76352 : [qemu] Consider replacing qemu-virtiofsd with new Rust version
+    ](https://bugs.archlinux.org/task/76352#:~:text=,and%20moving%20should%20be%20simple))), you can find it in QEMU 7.2 sources. However, focusing on the Rust version is future-proof. If you go this route, allocate some time to learn basic Rust syntax and how FFI works, since you might need to call io_uring syscalls from Rust.  
+
+7. **IDE / Editor Configuration:** Choose a development environment that makes navigating QEMU’s large codebase manageable. Popular options: 
+   - **VS Code** with the C/C++ extension (configure IntelliSense include paths to the QEMU source and build directories for autocompletion). You can use **clangd** or **ccls** language servers for smarter code navigation.  
+   - **CLion** (if available) or **Eclipse CDT** can index the code and help with refactoring, though they may need a compile_commands.json from Meson (`meson compile -C build --compile_commands`).  
+   - Even a good text editor (Vim/Emacs) with ctags or LSP can suffice. Ensure you generate tags or an index for quick “go to definition” since you’ll be jumping between QEMU, kernel headers, and perhaps virtiofsd code frequently.  
+   - Install **GDB** for debugging. With QEMU built in debug mode, you can step through code or inspect crashes. VS Code can be configured to launch QEMU under GDB for instance.  
+   - It’s also useful to familiarize yourself with QEMU’s coding style and guidelines. Read `docs/devel/style.rst` in QEMU to follow their C formatting conventions and commit message norms. You can use QEMU’s `scripts/checkpatch.pl` on your patches to catch style issues early.  
 
-# Anti-Sandbox and Anti-Virtual Machine Evasion Techniques
+8. **KVM Access:** Since you’ll be running VMs for testing, ensure KVM is enabled on your host. Verify that `/dev/kvm` exists and your user has permission (you may need to add yourself to the `kvm` group or run QEMU with sudo if not set). KVM will accelerate the guest significantly, which is important for realistic I/O performance testing. If for some reason KVM is not available, you can use TCG (software emulation), but it will be much slower and could bottleneck CPU during I/O benchmarks.  
 
-Malware authors employ **anti-sandbox** and **anti-virtual machine (anti-VM)** techniques to detect when their code is running in a controlled analysis environment. Below is a comprehensive review of **50+ techniques**, organized by category (CPU-based, memory-based, API monitoring/hooks, timing-based, environment/configuration, and user-interaction checks). Each technique is explained in detail with Windows C/C++ code snippets where possible, and practical mitigation strategies for analysts and sandbox developers are discussed.
+9. **Version Control Workflow:** Use Git effectively. Create a new branch for your GSoC work (e.g. `gsoc-fuse-io_uring`). Commit early and often with clear messages. This way you can experiment freely and also revert or bisect if something breaks. It also makes it easier to send patches later. Consider pushing your branch to a personal fork on GitLab/GitHub regularly as a backup and for your mentor to review progress.  
 
-## CPU-Based Detection Techniques
+By the end of Week 1, you should have QEMU and virtiofsd built from source and an editor setup you’re comfortable with. This foundation will allow you to quickly prototype and test code changes in the following weeks.
 
-CPU-level techniques leverage differences in how hardware or low-level instructions behave under virtualization. Many are hard to detect externally because they execute normal instructions that VMs may handle differently than physical machines.
+## Build and Testing Pipeline (Weeks 2–3)  
+With the environment ready, the next step is establishing a reliable build and test workflow. You will be frequently rebuilding QEMU/virtiofsd and launching VMs to test your changes, so streamline this process:
 
-### CPUID Hypervisor Flag Check (Hypervisor Bit)
-
-**How it works:** The x86 `CPUID` instruction can reveal the presence of a hypervisor. When called with `EAX=1`, bit 31 of `ECX` is the **Hypervisor Present** flag. On a physical machine this bit is `0`, but on a virtual machine it is set to `1` ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=identify%20virtual%20environments%3A%20%E2%80%A2CPUID%3A%20This,it%20will%20equal%20to%201)). Malware uses this to decide if it’s in a VM. This method is popular because it’s a straightforward, single-instruction check that doesn’t require privileged access.
-
-**Code (CPUID hypervisor flag):** The following example uses inline assembly to execute CPUID and test the 31st bit of ECX. It sets a boolean if a VM is detected (bit = 1) ([Defeating malware's Anti-VM techniques (CPUID-Based Instructions) | Rayanfam Blog](https://rayanfam.com/topics/defeating-malware-anti-vm-techniques-cpuid-based-instructions/#:~:text=int%20main%28%29%20,UnderVM)) ([Defeating malware's Anti-VM techniques (CPUID-Based Instructions) | Rayanfam Blog](https://rayanfam.com/topics/defeating-malware-anti-vm-techniques-cpuid-based-instructions/#:~:text=The%20above%20code%20set%20eax%3D1,finally%20saved%20on%20%E2%80%9CIsUnderVM%E2%80%9D%20variable)):
-
-```cpp
-#include <iostream>
-int main() {
-    bool inVirtualMachine = false;
-    __asm {
-        xor    eax, eax      // set EAX = 0
-        inc    eax           // now EAX = 1
-        cpuid               // perform CPUID with EAX=1
-        bt     ecx, 0x1F    // bit test ECX bit 31 (0x1F hex)
-        jc     is_vm        // jump if carry (bit was 1)
-        jmp    done
-      is_vm:
-        mov    inVirtualMachine, 1
-      done:
-    }
-    std::cout << (inVirtualMachine ? "VM detected" : "No VM detected");
-    return 0;
-}
-```
+- **Rebuilding Quickly:** After the initial full build, incremental builds are much faster. When you edit QEMU C code, just run `ninja -C build` again – Meson/Ninja will compile only changed files and relink. For virtiofsd (Rust), `cargo build` will likewise incrementally build. It’s a good idea to compile with debug symbols throughout development. Optimized builds can be done later for benchmarking. Keep an eye on compiler warnings and fix them early. Enable extra warnings (`-Dwarning_level=1` in Meson, which QEMU uses by default) to catch potential issues.  
 
-If running inside a hypervisor, this program will print "VM detected", otherwise "No VM detected". The key is the `bt ecx, 0x1F` which checks the hypervisor bit and sets the flag accordingly ([Defeating malware's Anti-VM techniques (CPUID-Based Instructions) | Rayanfam Blog](https://rayanfam.com/topics/defeating-malware-anti-vm-techniques-cpuid-based-instructions/#:~:text=int%20main%28%29%20,UnderVM)) ([Defeating malware's Anti-VM techniques (CPUID-Based Instructions) | Rayanfam Blog](https://rayanfam.com/topics/defeating-malware-anti-vm-techniques-cpuid-based-instructions/#:~:text=The%20above%20code%20set%20eax%3D1,finally%20saved%20on%20%E2%80%9CIsUnderVM%E2%80%9D%20variable)).
+- **Running a QEMU VM:** To test FUSE/virtiofsd functionality, prepare a small Linux virtual machine image: for example, an Ubuntu Server or Alpine Linux image for the guest. You can use cloud images or create one with `qemu-img` and install an OS. Ensure the guest kernel is relatively new (5.15+ or newer) so it has virtio-fs support (kernel 5.4+ has virtiofs). The guest OS should have the `virtiofs` kernel module available (most modern distributions do).  
 
-**Mitigation:** To defeat this check, **sandbox developers** can intercept or modify the CPUID result. Many hypervisors allow masking of the hypervisor bit or use a **“stealth mode”** where they report it as zero. For example, custom VM configurations can hide the hypervisor presence. **Analysts** running malware can use such hypervisor settings or run the sample on bare-metal if possible. Another approach is using hardware virtualization extensions that allow transparency – e.g., running the analysis *outside* the guest OS (so the malware sees no hypervisor in CPUID). The goal is to ensure the CPUID flag appears as it would on a real machine.
-
-### CPUID Virtualization Vendor ID
-
-**How it works:** Another CPUID trick is querying the **virtualization vendor ID string**. Using `CPUID` with `EAX=0x40000000` returns a hypervisor-defined vendor signature in registers EBX, ECX, EDX ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=Anti,%E2%80%9CMicrosoft%20HV%E2%80%9D%20%E2%97%A6VMware%20%3A%20%E2%80%9CVMwareVMware%E2%80%9D)). Known values include `"VMwareVMware"` for VMware, `"Microsoft Hv"` for Hyper-V, `"XenVMMXenVMM"` for Xen, `"VBoxVBoxVBox"` for VirtualBox, etc. ([Defeating malware's Anti-VM techniques (CPUID-Based Instructions) | Rayanfam Blog](https://rayanfam.com/topics/defeating-malware-anti-vm-techniques-cpuid-based-instructions/#:~:text=%3E%20%20%20,VMware%20%3A%20%E2%80%9CVMwareVMware%E2%80%9D)) ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,Private%20as%20license%20value)). Malware checks these returned strings to identify the specific VM platform.
-
-**Code (CPUID vendor string):** This snippet calls CPUID with EAX=0x40000000 and checks for the "VMware" signature in ECX/EDX ([Defeating malware's Anti-VM techniques (CPUID-Based Instructions) | Rayanfam Blog](https://rayanfam.com/topics/defeating-malware-anti-vm-techniques-cpuid-based-instructions/#:~:text=__asm%20,NopInstr%20mov%20IsUnderVM%2C%200x1%20NopInstr)) ([Defeating malware's Anti-VM techniques (CPUID-Based Instructions) | Rayanfam Blog](https://rayanfam.com/topics/defeating-malware-anti-vm-techniques-cpuid-based-instructions/#:~:text=The%20above%20code%20set%20eax%3D0x40000000,will%20finally%20save%20into%20%E2%80%9CIsUnderVM%E2%80%9D)):
-
-```cpp
-#include <iostream>
-#include <intrin.h>  // for __cpuid on MSVC
-int main() {
-    int info[4];
-    __cpuid(info, 0x40000000);
-    // The vendor string is 12 bytes stored in EBX, ECX, EDX of CPUID output
-    unsigned int part1 = info[1]; // EBX
-    unsigned int part2 = info[2]; // ECX
-    unsigned int part3 = info[3]; // EDX
-    // "VMwareVMware" split into 3 parts in little-endian form:
-    if (part2 == 0x4D566572 && part3 == 0x65726177) {  // hex for "MVre" and "eraw"
-        std::cout << "VMware hypervisor detected\n";
-    } else {
-        std::cout << "No known hypervisor vendor detected\n";
-    }
-}
-```
-
-In this code, we use the compiler intrinsic `__cpuid` for clarity. The check compares the result with known hex values corresponding to "VMware" (the code above checks for VMware’s signature specifically) ([Defeating malware's Anti-VM techniques (CPUID-Based Instructions) | Rayanfam Blog](https://rayanfam.com/topics/defeating-malware-anti-vm-techniques-cpuid-based-instructions/#:~:text=__asm%20,NopInstr%20mov%20IsUnderVM%2C%200x1%20NopInstr)). Similar comparisons could be made for other vendor strings.
-
-**Mitigation:** **Sandbox developers** can randomize or remove identifying vendor strings. For instance, VMware has an option to customize the exposed CPUID vendor, and VirtualBox can be configured to use a generic string. Another tactic is to intercept this CPUID call at the hypervisor level and return a fake **vendor-neutral** string or zeros. **Analysts** should be aware of this check; if possible, they can patch the malware binary to bypass string comparisons or use a hypervisor that already neutralizes the vendor ID. Some modern sandboxes choose hypervisors with minimal fingerprint (e.g., KVM with no custom vendor string) to mitigate this detection.
-
-### Interrupt Descriptor Table Register Check (Red Pill via SIDT)
-
-**How it works:** The **“Red Pill”** technique uses the `SIDT` instruction to detect VMs by examining the location of the Interrupt Descriptor Table (IDT) in memory ([SIDT, Red Pill - Unprotect Project](https://unprotect.it/technique/sidt-red-pill/#:~:text=Red%20Pill%20is%20a%20technique,it%20in%20a%20memory%20location)). In a normal OS, the IDT is stored at a typical address (often lower in memory), but virtualization often relocates it to avoid conflicts with the host. For example, on VMware the IDT base often lies around `0xFFXXXXXX`, and on Microsoft VirtualPC around `0xE8XXXXXX`, whereas on a physical Windows machine it’s typically near `0x80FFFFFF` ([Microsoft PowerPoint - SANSFire2006.ppt](https://handlers.sans.org/tliston/ThwartingVMDetection_Liston_Skoudis.pdf#:~:text=%E2%80%93%20On%20VMware%20guest%20machines%2C,are%20in%20a%20real%20machine)). The original Red Pill check simply obtains the IDT base and looks at its most significant byte; if it’s above a certain threshold (e.g., > `0xD0` in the first byte, meaning an address above 0xD0000000), then it assumes a virtual environment ([Microsoft PowerPoint - SANSFire2006.ppt](https://handlers.sans.org/tliston/ThwartingVMDetection_Liston_Skoudis.pdf#:~:text=SIDT%20%E2%80%93%20If%20it%E2%80%99s%20greater,message%20saying%20that%20it%20is)).
-
-**Code (SIDT Red Pill):** The following code retrieves the IDTR base address via `SIDT` and checks if it falls into a high memory range indicative of a VM:
-
-```cpp
-#include <stdio.h>
-#include <stdint.h>
-
-int main() {
-    unsigned char idtr[6];  // IDTR structure: 6 bytes on x86 (limit:2 bytes, base:4 bytes)
-    __asm sidt idtr;
-    uint32_t idtBase = *(uint32_t*)(idtr + 2);  // extract base address
-    printf("IDT Base: 0x%X\n", idtBase);
-    // Red Pill check: if IDT base > 0xD0000000 -> likely VM
-    if (idtBase > 0xD0000000) {
-        printf("Virtual machine suspected (Red Pill trigger)\n");
-    } else {
-        printf("Running on a physical machine (no Red Pill trigger)\n");
-    }
-    return 0;
-}
-```
-
-This prints the IDT base and uses the classic threshold (0xD0000000) as the indicator ([Microsoft PowerPoint - SANSFire2006.ppt](https://handlers.sans.org/tliston/ThwartingVMDetection_Liston_Skoudis.pdf#:~:text=SIDT%20%E2%80%93%20If%20it%E2%80%99s%20greater,message%20saying%20that%20it%20is)). On VMware/VirtualBox the output address is usually high (triggering the message), whereas on real hardware it’s lower.
-
-**Mitigation:** Because `SIDT` is not a privileged instruction, **hypervisors cannot easily intercept it** ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=of%20the%20malware%20in%20a,VM%20instead%20of%20on%20bare)). Instead, mitigation involves shaping the environment: modern hypervisors try to place the guest IDT at an address that looks “normal.” For instance, some VM platforms now map certain structures in low memory or use hardware features to avoid the telltale high address. **Sandbox developers** should ensure their VM’s IDT (and similar descriptors like the GDT/LDT) reside at typical physical machine addresses if possible. Alternatively, they can run analysis on bare-metal or use hardware-assisted virtualization that doesn’t rely on relocating the IDT. **Researchers** who encounter Red Pill can run the sample on a real machine or in a cloud VM that is less fingerprintable. Another mitigation is to modify the check (e.g., patch the malware to skip the SIDT comparison when analyzing it), though this requires reverse-engineering effort.
-
-### Descriptor Table and Control Register Checks (GDT, LDT, SMSW)
-
-**How it works:** Variants of the Red Pill use similar instruction tests. The `SGDT` (Store Global Descriptor Table) and `SLDT` (Store Local Descriptor Table) instructions, and reading certain control registers or status flags (like via `SMSW` – Store Machine Status Word) can also yield different values in a VM vs. physical machine ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=Instruction%20Testing%20,related%20to%20Unprotect%20technique%20U1325)). Like SIDT, these instructions return data that the hypervisor may relocate or modify. For example, the Global Descriptor Table register base might be placed at a distinctive address under a VMM. `STR` (Store Task Register) is another instruction used (sometimes called the "No Pill" technique) to detect VMs by getting the Task State Segment selector – some hypervisors don’t emulate this exactly as on real hardware ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=metal,used%20to%20detect%20the%20execution)).
-
-**Code (GDT check via SGDT):** 
-
-```cpp
-#include <stdio.h>
-#include <stdint.h>
-int main() {
-    unsigned char gdtr[6];
-    __asm sgdt gdtr;
-    uint32_t gdtBase = *(uint32_t*)(gdtr + 2);
-    printf("GDT Base: 0x%X\n", gdtBase);
-    // Simple heuristic: extremely high GDT base could indicate VM
-    if (gdtBase > 0xD0000000) {
-        printf("High GDT base - likely running in VM\n");
-    }
-    return 0;
-}
-```
-
-This code is analogous to the IDT check but for the GDT base. Similarly, one could use `sldt` or `str` in inline assembly to retrieve LDT or Task Register values. Each of these have known typical ranges; if the value falls into a suspicious range or pattern (for instance, a specific selector value from `STR` known to be used by VMware), the malware can flag a VM ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=metal,used%20to%20detect%20the%20execution)).
-
-**Mitigation:** These low-level checks are tricky. **Sandbox developers** should study which values their hypervisor gives for GDT/LDT/Task Register and try to align them with what a normal system would have. Some modern sandboxes instrument these instructions at the hypervisor level if possible (e.g., using VT-x trapping of certain privileged operations in kernel-mode malware, though from user-mode they might not trap). In practice, ensuring the **descriptor tables** and **status registers** don’t have out-of-place values is key – perhaps by using newer virtualization tech or patches that specifically address these known tells. **For analysts**, the advice is similar to SIDT: use VMs known to be resistant to these checks (some research sandbox hypervisors have custom mitigations), or analyze on actual hardware when such checks are suspected.
-
-### Trap Flag-Based Detection (Single-Step Exception)
-
-**How it works:** A more **recent technique** abuses the CPU’s **Trap Flag (TF)** to differentiate VM vs. real hardware. The Trap Flag in the EFLAGS register causes a debug exception after each instruction (single-step mode). Mark Lim (Unit 42) discovered that many hypervisors historically did not perfectly emulate this behavior ([Evade Sandboxes With a Single Bit – the Trap Flag](https://unit42.paloaltonetworks.com/single-bit-trap-flag-intel-cpu/#:~:text=Unit%2042%20has%20discovered%20a,CPU%20after%20setting%20this%20single)). Malware can set the TF and then execute an instruction to see if a single-step exception occurs as expected. If the behavior deviates (e.g., no exception or an abnormal pattern of exceptions), it indicates a virtualized environment ([Evade Sandboxes With a Single Bit – the Trap Flag](https://unit42.paloaltonetworks.com/single-bit-trap-flag-intel-cpu/#:~:text=match%20at%20L104%20The%20trap,allow%20the%20contents%20of%20the)). In one case, a trojan (Lampion) used this to generically evade sandboxes ([Evade Sandboxes With a Single Bit – the Trap Flag](https://unit42.paloaltonetworks.com/single-bit-trap-flag-intel-cpu/#:~:text=Unit%2042%20has%20discovered%20a,CPU%20after%20setting%20this%20single)).
-
-**Code (Trap Flag detection):** Enabling the trap flag in user-mode and catching the exception can be done with structured exception handling. Below is a conceptual example (note: proper SEH setup is needed for a real implementation):
-
-```cpp
-#include <windows.h>
-#include <iostream>
-
-int main() {
-    __try {
-        __asm {
-            pushfd                   // push original EFLAGS
-            or dword ptr [esp], 0x100  // set TF (bit 8) on the copy
-            popfd                    // pop modified EFLAGS (TF now set)
-            nop                      // execute one instruction
-        }
-        // If running on real hardware, the single-step exception will jump to __except.
-        std::cout << "No VM detected (single-step occurred)\n";
-    }
-    __except(EXCEPTION_EXECUTE_HANDLER) {
-        // If we end up here, it means an exception was caught:
-        // On a real machine, this should catch the single-step.
-        // If this __except is *not* hit, something is off (likely a VM not generating the expected exception).
-        std::cout << "VM detected or abnormal Trap Flag behavior\n";
-    }
-    return 0;
-}
-```
-
-In this snippet, we set the trap flag and execute a `nop`. On a normal system, a single-step (`EXCEPTION_SINGLE_STEP`) should be raised and handled by the `__except` block. If running in a VM that mis-handles TF, the behavior might differ (e.g., no exception, or continuing execution unexpectedly). The malware can detect that difference by where the flow ends up.
-
-**Mitigation:** The proper emulation of CPU flags is essential. **Sandbox developers** should ensure their hypervisor correctly handles the Trap Flag at the CPU level ([Navigating the Vast Ocean of Sandbox Evasions](https://unit42.paloaltonetworks.com/sandbox-evasion-memory-detection/#:~:text=fact%20that%20many%20hypervisors%20incorrectly,behavior%20of%20the%20trap%20flag)). In fact, once this technique was publicized, vendors patched their hypervisors to fix the TF emulation bug ([Evade Sandboxes With a Single Bit – the Trap Flag](https://unit42.paloaltonetworks.com/single-bit-trap-flag-intel-cpu/#:~:text=the%20incorrect%20emulation%20of%20the,malware%20sample%20using%20this%20technique)). For a sandbox, updating to a version where such CPU bugs are resolved is crucial. If not possible, another mitigation is to run the code under a *hypervisor that uses hardware breakpoints outside the guest* (so the guest cannot discern the difference). **For researchers**, if they suspect Trap Flag checks, they can attempt to disable that code path (by patching the malware binary) or use an environment known to handle TF properly (for example, some cloud VMs or newer virtualization platforms might not exhibit the issue). Ultimately, the best solution is for the sandbox to **faithfully emulate CPU behavior**, leaving no easy single-bit indicators for malware.
-
-### VMware I/O Port Communication ("Backdoor" `IN` Instruction)
-
-**How it works:** VMware hypervisors provide a special I/O port interface (often called the VMware backdoor) that allows the guest to communicate with the host (for things like clipboard sharing, etc.). This is accessible via specific I/O port instructions. Malware can attempt to use this interface – if it succeeds (i.e., doesn’t crash and returns expected data), it means VMware is present ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=Anti,Otherwise%20it%20will%20fail)). Typically, the malware will execute an `IN` instruction on port **0x5658** with certain registers preset (a magic value). On VMware, the hypervisor will respond with a signature. On a non-VM system, executing an I/O port read from ring3 either raises an exception (privileged instruction) or returns nothing meaningful ([Anti-VM: in instruction (VMWare) · Issue #228 · ayoubfaouzi/al-khaser · GitHub](https://github.com/LordNoteworthy/al-khaser/issues/228#:~:text=Can%20you%20please%20try%20this,see%20it%20confirmed%20before%20including)).
-
-**Code (VMware backdoor detection):** The code below tries the VMware port `0x5658`. It uses inline assembly within a structured exception handler to catch the privilege exception if not in a VM ([Anti-VM: in instruction (VMWare) · Issue #228 · ayoubfaouzi/al-khaser · GitHub](https://github.com/LordNoteworthy/al-khaser/issues/228#:~:text=mov%20%20%20%20eax%2C,%2F%2F%20port%20number)) ([Anti-VM: in instruction (VMWare) · Issue #228 · ayoubfaouzi/al-khaser · GitHub](https://github.com/LordNoteworthy/al-khaser/issues/228#:~:text=in%20%20%20%20,%2F%2F%20set%20return%20value)):
-
-```cpp
-#include <windows.h>
-#include <iostream>
-
-bool IsRunningOnVMware() {
-    bool isVMware = false;
-    __try {
-        __asm {
-            push   ebx
-            push   ecx
-            push   edx
-            mov    eax, 'VMXh'   // magic value
-            mov    ebx, 0        // arbitrary value, will be overwritten if in VM
-            mov    ecx, 0x0A     // command: get VMware version
-            mov    edx, 'VX'     // port number 0x5658 ('VX' in little-endian)
-            in     eax, dx       // attempt to read from port 0x5658
-            cmp    ebx, 'VMXh'   // VMware should echo magic value into EBX
-            sete   al            // set AL=1 if EBX == 'VMXh'
-            movzx  eax, al
-            mov    isVMware, eax // isVMware = result (1 if VMXh magic seen)
-            pop    edx
-            pop    ecx
-            pop    ebx
-        }
-    } __except(EXCEPTION_EXECUTE_HANDLER) {
-        isVMware = false;
-    }
-    return isVMware;
-}
-
-int main() {
-    if (IsRunningOnVMware()) {
-        std::cout << "VMware detected\n";
-    } else {
-        std::cout << "No VMware detected\n";
-    }
-    return 0;
-}
-```
-
-Inside the `__asm` block, we prepare registers and use `IN eax, dx` on port `0x5658`. On VMware, this will not raise an exception and will set EBX to `'VMXh'` (the magic constant) as a response ([Anti-VM: in instruction (VMWare) · Issue #228 · ayoubfaouzi/al-khaser · GitHub](https://github.com/LordNoteworthy/al-khaser/issues/228#:~:text=mov%20%20%20%20eax%2C,%2F%2F%20port%20number)). The code then checks EBX. If it matches, we conclude we’re on VMware. If the instruction causes an exception (caught by `__except`), we assume we are *not* on VMware or not in ring0. This technique only specifically detects VMware, but malware often includes similar checks for other platforms (for example, reading MSRs or I/O ports known to be used by VirtualBox, etc.).
-
-**Mitigation:** **Sandbox/VM developers** can disable or hide these special I/O port communications. VMware, for instance, allows disabling its backdoor interface (setting `monitor_control.disable_directexec = "TRUE"` or related config to prevent guest from using it). Another approach is to run the sandbox on a hypervisor that doesn’t use such backdoor ports or has them well-protected. In general, preventing *unprivileged I/O port access* is ideal – normally ring3 code shouldn’t execute `in`/`out` instructions, but VMware’s backdoor is a special case where the hypervisor intercepts it. Sandbox developers should either intercept those attempts and emulate a failure (so malware doesn’t get the expected reply) or ensure an exception is thrown just like on a real machine. **For analysts**, if using VMware, be aware of this detection: consider using a different hypervisor or enabling settings to hide the backdoor. Some researchers intentionally run malware in VirtualBox or KVM when they know it specifically targets VMware, or vice-versa, to evade the malware’s evasion!
-
-### Non-Emulated Instructions and MSR Access
-
-**How it works:** Malware may try to execute instructions that are not commonly used and see if they behave unusually. For example, certain older virtualization platforms did not support the full range of SSE/MMX instructions or specific newer CPU instructions. One example cited is malware checking for **MMX support** – historically, if a VM didn’t implement MMX, the absence would indicate a VM ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=Anti,For%20example)). Additionally, reading **Model-Specific Registers (MSRs)** that are normally present on real CPUs but might be absent or trigger errors on VMs is another trick. For instance, malware might attempt to read an MSR that should exist on a bare-metal CPU; if running under a hypervisor, this could cause a VM exit or exception if not handled. Similarly, executing privileged instructions (like `CLI` to disable interrupts or `SGX` instructions) in user-mode and seeing if/how they fail can differentiate environments.
-
-*Note:* These techniques are less common in typical malware because they may crash the process if not carefully handled (unlike CPUID which is safe). However, advanced malware might wrap such instructions in exception handlers to safely probe the environment.
+  A basic command to boot a VM (with 2 GB RAM, 2 CPUs) is:  
+  ```bash
+  build/qemu-system-x86_64 -m 2048 -smp 2 -enable-kvm -cpu host \
+      -drive file=guest.img,format=qcow2,if=virtio \
+      -nographic -serial mon:stdio -kernel bzImage -append "console=ttyS0 root=/dev/vda1 rw"
+  ```  
+  (Replace `guest.img` with your disk image, and `bzImage` with a kernel image if you prefer using -kernel). This boots a console-only VM which is useful for automated testing. Ensure you can log into the guest.  
 
-**Code (MSR read example):** The following tries to read an arbitrary MSR (0x174 is IA32_SYSENTER_EIP for example) and uses `__readmsr` intrinsic (requires driver or privileged context normally). We illustrate conceptually:
+- **Setting up Virtio-FS testing:** Now, to test the virtiofs feature (which is the crux of our project), you will launch **virtiofsd** on the host and attach it to the QEMU VM:  
+  1. **Prepare a shared directory** on the host, e.g. `mkdir ~/shared_test` and put a few test files in it (this will be exported to the guest).  
+  2. **Start virtiofsd** (the one you built or installed). For example:  
+     ```bash
+     ./virtiofsd --socket-path=/tmp/vhostqemu --shared-dir=/home/user/shared_test --cache=auto &
+     ```  
+     This command may differ slightly based on virtiofsd version. The old syntax (C version) was `-o source=/path -o cache=always`, whereas the Rust version uses `--shared-dir` and `--cache`. The `--socket-path` specifies a Unix socket that QEMU will use to communicate (here `/tmp/vhostqemu`). Keep virtiofsd running in a separate terminal.  
 
-```cpp
-#include <intrin.h>
-#include <iostream>
-#include <stdexcept>
+  3. **Launch QEMU with virtio-fs device**. You need to pass the socket to QEMU and add a *vhost-user FS* device:  
+     ```bash
+     build/qemu-system-x86_64 -enable-kvm -m 2048 -cpu host -smp 2 \
+       -object memory-backend-memfd,id=mem,size=2048M,share=on \
+       -numa node,memdev=mem \
+       -chardev socket,id=char0,path=/tmp/vhostqemu \
+       -device vhost-user-fs-pci,chardev=char0,tag=myfs \
+       -drive file=guest.img,format=qcow2,if=virtio ...
+     ```  
+     Let’s break down the important options:  
+     - The `-chardev socket,id=char0,path=/tmp/vhostqemu` connects QEMU to the virtiofsd’s socket.  
+     - The `-device vhost-user-fs-pci,...,tag=myfs` adds a virtio-fs device in the guest. `tag=myfs` is an identifier for the mount.  
+     - The `-object memory-backend-memfd,...share=on` part allocates shared memory for DAX (Direct Access). While not strictly required for basic functionality, it’s recommended to include `share=on` so that virtiofsd and QEMU share the file pages (this is for performance with cache=auto/always).  
+     - Ensure the guest kernel command-line includes support for huge memory if using DAX, or simply omit the `-object` and `-numa` lines if you want to start without DAX initially.  
 
-int main() {
-    try {
-        unsigned __int64 val = __readmsr(0x174); // attempt read MSR 0x174
-        std::cout << "MSR[0x174] = " << std::hex << val << "\n";
-    } catch (...) {
-        std::cerr << "MSR read failed (possibly in VM or no permission)\n";
-    }
-}
-```
-
-In user-mode, this will likely throw an exception (since reading MSR is privileged). Malware might do this in kernel mode (via a driver) or use a different approach (e.g., `asm volatile("rdmsr")` with exception handling). If running in a VM without proper handling, the exception might indicate a hypervisor is present (or simply that it’s user-mode – so this method is more applicable in kernel-mode malware).
-
-**Mitigation:** **Sandbox developers** should ensure that common instruction sets are enabled in the VM (modern hypervisors generally support MMX/SSE, so that specific check is mostly historical). For MSRs and odd instructions, the sandbox can intercept and handle them gracefully. For example, if malware attempts a known problematic instruction, the hypervisor could emulate a realistic response. Patching hypervisors to handle corner-case instructions (or configuring them to expose features like a real CPU) helps. In practice, these checks are less straightforward for malware (due to risk of crashing), so they are not as prevalent. **Analysts** typically won’t need to do much here except use up-to-date VM platforms. If analyzing very sophisticated malware that includes a driver to do MSR checks, one might need to use a fully emulated environment or instrumentation that can catch the attempt. Overall, staying current with VM technology mitigates many of these quirks.
-
-## Memory-Based Detection Techniques
-
-Memory-based techniques involve examining memory layout, system memory properties, or scanning for known signatures that betray virtualization. These don’t rely on special CPU instructions, but on differences in how memory is allocated or labeled in VMs.
-
-### Physical Memory Size and Configuration Checks
-
-**How it works:** Sandboxes and VMs often run with minimal resources compared to modern real machines. Malware frequently queries the system’s memory size and configuration to see if it’s unusually small or aligned to powers of two (common in VMs). For example, if total physical RAM is 1GB or 2GB, it might be a tell (many user machines today have >4GB). Malware can call Windows APIs like `GlobalMemoryStatusEx` to get total RAM ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,todo)) ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=Unprotect%20technique%20U1340,related%20to%20Unprotect%20technique%20U1313)). Similarly, it might check if there’s a page file or how large it is – some sandboxes disable or have small page files.
-
-**Code (Memory size check):** 
-
-```cpp
-#include <windows.h>
-#include <iostream>
-
-int main() {
-    MEMORYSTATUSEX mem;
-    mem.dwLength = sizeof(mem);
-    GlobalMemoryStatusEx(&mem);
-    DWORDLONG totalPhys = mem.ullTotalPhys;
-    std::cout << "Total RAM: " << (totalPhys / (1024*1024)) << " MB\n";
-    // Flag if RAM is below a threshold (e.g., 2048 MB)
-    if (totalPhys < 2048ULL*1024*1024) {
-        std::cout << "Suspicious: Low memory (possible VM)\n";
-    }
-}
-```
-
-This prints total RAM and flags if under 2GB. Modern PCs typically have much more, so malware might use 4GB as a threshold (as an example, one source noted “Most modern machines have at least 4 GB of memory” ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=Unprotect%20technique%20U1340,related%20to%20Unprotect%20technique%20U1313))).
-
-**Mitigation:** **Researchers/analysts** can configure their VMs with higher RAM to evade simple checks (e.g., give the VM 8GB if possible to appear normal). **Sandbox providers** often configure analysis VMs to have realistic hardware specs – e.g., 4GB+ RAM, to avoid tripping this heuristic ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=Unprotect%20technique%20U1340,related%20to%20Unprotect%20technique%20U1313)). Another mitigation is to intercept calls like `GlobalMemoryStatusEx` and return a fake inflated value (though that can be risky if the malware tries to actually allocate memory based on that value). Usually, simply allocating more resources to the VM is easiest. Note that some malware also check for *excessively* high RAM (since a sandbox might also misconfigure and give an exact round number like 8GB with nothing else on disk, which could still look suspicious if other indicators pile up). Aim for plausibility: memory size consistent with the OS and other specs (e.g., 8GB for a Windows 10 machine is plausible).
-
-### Memory Layout Artifacts (Scanning for Hypervisor Signatures in Memory)
-
-**How it works:** Certain hypervisors leave telltale data in memory. Malware can scan the raw memory for specific strings like "VMware" or "VirtualBox" that might appear in firmware tables or driver memory ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=Check%20Memory%20Artifacts%20B0009,Windows%20registry%20or%20other%20places)). For instance, VMware’s hypervisor or tools may have the string "VMware" present in memory. Another example: VirtualBox’s BIOS has a default BIOS date (often **06/23/99**), which malware can retrieve via `GetSystemFirmwareTable` or by reading the registry (e.g., `HARDWARE\Description\System\SystemBiosDate`) ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,Logical%20Unit%20Id)). If it matches the known VM BIOS date, that’s a giveaway. Similarly, certain memory locations such as the video BIOS might contain "VBOX" or "VirtualBox" strings ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,VMWARE)).
-
-Malware might allocate memory and then use device drivers or system calls to read physical memory looking for these patterns. This is less common in user-mode (requires privilege or driver) but is a known technique.
-
-**Code (Firmware table check):** 
-
-```cpp
-#include <windows.h>
-#include <iostream>
-#include <vector>
-
-int main() {
-    // Get RAW SMBIOS firmware table
-    DWORD size = GetSystemFirmwareTable('RSMB', 0, NULL, 0);
-    std::vector<byte> buffer(size);
-    GetSystemFirmwareTable('RSMB', 0, buffer.data(), size);
-    // Search for "VirtualBox" in the BIOS SMBIOS data
-    std::string biosData(buffer.begin(), buffer.end());
-    if (biosData.find("VirtualBox") != std::string::npos) {
-        std::cout << "VirtualBox signature found in firmware table (VM detected)\n";
-    }
-}
-```
-
-This code retrieves the raw SMBIOS table and searches for the substring "VirtualBox". Many virtualization platforms include identifying strings in SMBIOS or ACPI tables (like OEM IDs). Malware can similarly query ACPI tables for "VBOX" OEM ID ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=)). If such a substring is found, it’s almost certainly a VM.
-
-**Mitigation:** **Sandbox developers** should scrub identifying strings from BIOS/firmware if possible. Some hypervisors allow customization of BIOS information (e.g., change the BIOS date, manufacturer to something generic). Ensuring that strings like "VirtualBox", "VMware", "QEMU" are removed or replaced in firmware tables is important. Another approach is to use **custom BIOS/ACPI data** that mimics a real vendor (for instance, set the BIOS vendor to "Dell Inc." and use a realistic BIOS date). **Analysts** using public sandboxes can’t change this, but if setting up their own VM, they can use tools or scripts to patch these values (there are community tools for VirtualBox/VMware to set custom DMI strings). If malware is scanning memory broadly for certain strings, that’s harder to mitigate without controlling the hypervisor – in such cases, running on a platform it doesn’t expect can help (e.g., some malware only looks for "VirtualBox" and "VMware"; using a less common hypervisor might evade that specific scan).
-
-### Unusual Memory Mappings and Interrupt Tables
-
-**How it works:** Beyond just IDT (covered in CPU section), malware might look at memory-mapped structures like the **Local Descriptor Table (LDT)** or **Interrupt Descriptor Table** base address directly from memory. On Windows, the IDT is stored in the kernel’s memory space. Malware with the right privileges might examine those addresses. Another trick is checking the **Interrupt Vector Table** on older systems or the **presence of certain emulator memory patterns** (some older emulators put magic values at known addresses). Modern malware less frequently uses direct memory peeking due to requiring kernel access or complex code, but it’s part of the arsenal.
-
-**Example:** One known memory artifact is the location of the **IDT, GDT, LDT** themselves as stored in memory (not just via SIDT instruction). For instance, the values returned by SIDT are actually stored at specific global variables in the OS; however, leveraging that requires debug symbols or specific offsets, which is not generic enough for most malware. Instead, they rely on the instructions approach described earlier.
-
-Another example: checking if certain **memory ranges are present or absent**. Some sandbox environments might have a different physical memory map. Malware could use the `NtQuerySystemInformation` with `SystemPhysicalMemoryInformation` (if available) to see how memory is laid out. If it finds only one contiguous block of physical memory of exactly the VM’s size, that could hint at a VM (whereas a real system might have holes or reserved areas).
-
-**Mitigation:** The mitigations overlap with earlier ones – ensure the memory layout looks typical. **Sandbox devs** should avoid obvious anomalies like an unsurprising contiguous block from 0x0 to X with no holes. Many of these are edge cases, and there’s not much evidence of widespread malware scanning raw memory maps in user mode (because it’s complicated and often requires privileges). Still, staying aware of such possibilities is useful. **Analysts** generally won’t have to act on this unless analyzing malware known for using drivers to inspect memory, in which case using a controlled kernel debugging or a hypervisor that can intercept such reads is advisable.
-
-## API Monitoring & Hook Detection Techniques
-
-Dynamic analysis sandboxes and AV products often inject hooks into API functions to log behavior. Malware can detect these hooks or the presence of analysis-specific DLLs to know it’s being watched. These techniques are *anti-sandbox* in the sense that many sandboxes rely on in-guest monitoring.
-
-### API Function Hook Presence (Patched Prologues)
-
-**How it works:** Sandboxes commonly hook Windows API calls (like `CreateFile`, `WriteFile`, etc.) to record what the malware does. Hooking often involves overwriting the first bytes of a function with a jump to monitoring code. Malware can detect this by inspecting the in-memory bytes of APIs. For example, on a clean system, the start of `CreateFileA` in kernel32.dll has a standard prologue; if it’s been hooked, it might begin with a JMP instruction to some other address (often in a monitoring DLL) ([Navigating the Vast Ocean of Sandbox Evasions](https://unit42.paloaltonetworks.com/sandbox-evasion-memory-detection/#:~:text=The%20first%20broad%20category%20of,see%20if%20they%20are%20hooked)). Attackers can read a few bytes of key APIs and look for unnatural JMPs or instructions that wouldn’t normally be there.
-
-**Code (hook detection for CreateFileA):** 
-
-```cpp
-#include <windows.h>
-#include <iostream>
-
-bool IsFunctionHooked(const char* module, const char* funcName) {
-    HMODULE hMod = GetModuleHandleA(module);
-    if (!hMod) return false;
-    void* funcAddr = GetProcAddress(hMod, funcName);
-    if (!funcAddr) return false;
-    // Read the first few bytes of the function
-    unsigned char firstBytes[6];
-    memcpy(firstBytes, funcAddr, 6);
-    // Check if the first byte is a JMP (0xE9 or 0xE8 for call/jmp relative)
-    return (firstBytes[0] == 0xE9 || firstBytes[0] == 0xE8);
-}
-
-int main(){
-    if (IsFunctionHooked("kernel32.dll", "CreateFileA")) {
-        std::cout << "CreateFileA is hooked (possible sandbox/monitor detected)\n";
-    } else {
-        std::cout << "CreateFileA is not hooked\n";
-    }
-}
-```
-
-This simplistic check looks for an `E9` or `E8` opcode at the start of `CreateFileA` (which would indicate a JMP/CALL). Real implementations might also check for a far jump (`0xFF` with certain modrm) or other signs of trampolines. Figure 1 of Unit 42’s report illustrates this concept – showing normal vs hooked API prologue ([Navigating the Vast Ocean of Sandbox Evasions](https://unit42.paloaltonetworks.com/sandbox-evasion-memory-detection/#:~:text=In%20Figure%201%2C%20we%20see,been%20instrumented%20in%20a%20sandbox)).
-
-**Mitigation:** The best mitigation is **not to hook APIs in the malware’s own process**. **Sandbox developers** increasingly use external monitoring (e.g., monitoring from the hypervisor or using ETW event tracing) so that the in-process bytes remain untouched ([Navigating the Vast Ocean of Sandbox Evasions](https://unit42.paloaltonetworks.com/sandbox-evasion-memory-detection/#:~:text=The%20gold%20standard%20for%20preventing,byte%20anywhere%20in%20the%20OS)). If hooking is necessary, one strategy is to use stealthier hooks that are harder to detect (for instance, using hardware breakpoints or less conspicuous patching), but those can be complex. Some advanced sandboxes use a **hypervisor-based hooking** where the guest’s memory is not modified at all (they trap syscalls or use memory introspection) ([Navigating the Vast Ocean of Sandbox Evasions](https://unit42.paloaltonetworks.com/sandbox-evasion-memory-detection/#:~:text=Instead%20of%20instrumenting%20APIs%20by,as%20shown%20in%20Figure%203)). From the malware perspective, if it doesn’t see patched bytes, it can’t flag the hook. **Analysts** who roll their own instrumentation should be aware of this and possibly avoid inline hooks. In practice, using a product that emphasizes “transparent analysis” is key – for example, Intel PT or other side-band recording rather than code hooks. If you must use hooks (e.g., in a debugger), know that malware may detect them and try to evade; one could temporarily remove hooks before letting the malware run its checks, then restore them (some sandbox systems try such tricky timing maneuvers, though it’s not foolproof).
-
-### Unhooking or Bypassing Instrumentation
-
-**How it works:** Some malware not only detects hooks but actively **unhooks** them. For instance, GuLoader was observed restoring the original bytes of hooked functions like `ZwProtectVirtualMemory` to bypass monitoring ([Navigating the Vast Ocean of Sandbox Evasions](https://unit42.paloaltonetworks.com/sandbox-evasion-memory-detection/#:~:text=Figure%202%20shows%20an%20example,to%20restore%20the%20original%20functionality)). By reading the expected bytes from disk (from the DLL file on disk) and comparing to memory, malware can identify changes and patch them back. This is an offensive evasion: the malware neutralizes the sandbox’s hooks to operate freely.
-
-This isn’t exactly a *detection* (malware might not quit but rather disable the hooks), but it’s related – it reveals the sandbox and evades it at the same time.
-
-**Code concept:** Pseudo-code for unhooking might be:
-
-```cpp
-// Pseudo-code: compare in-memory function bytes to on-disk image, and restore if different.
-void UnhookFunction(const char* dll, const char* funcName) {
-    HMODULE hMod = GetModuleHandleA(dll);
-    void* funcAddr = GetProcAddress(hMod, funcName);
-    // Read original bytes from file
-    // (Open dll file, find PE section for code, get offset of funcName's address, read bytes)
-    // Here we assume we have originalBytes array from disk
-    BYTE originalBytes[16];
-    // ... (code to fill originalBytes omitted for brevity)
-    if (memcmp(funcAddr, originalBytes, 16) != 0) {
-        DWORD oldProtect;
-        VirtualProtect(funcAddr, 16, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy(funcAddr, originalBytes, 16);
-        VirtualProtect(funcAddr, 16, oldProtect, &oldProtect);
-    }
-}
-```
-
-This outlines how malware could restore the first 16 bytes of an API if altered. The actual implementation requires parsing the PE file to get the function’s offset, which is doable with Windows APIs or manually.
-
-**Mitigation:** The mitigation here is similar – **avoid in-line hooks** that can be tampered with. If malware can correct the bytes, your sandbox loses visibility. Using out-of-process monitoring or hypervisor-level traps means there’s nothing in the process to unhook. Some endpoint solutions use a hypervisor or driver to intercept syscalls *after* the fact, making it invisible to the process. **Sandbox developers** should also monitor for unusual memory writes to API regions – if malware tries to patch kernel32.dll in memory, that itself is a red flag. They could allow it but note it (since that indicates evasion attempt) or prevent it with memory protection (though preventing it might reveal to the malware that something is fighting back). **Analysts** using debuggers should note if the malware tries to modify code – that might indicate it’s unhooking your breakpoints or instrumentation, which means you’ll need to step up your stealth (e.g., use a trace recorder rather than breakpoints).
-
-### Detection of Analysis or Security DLLs
-
-**How it works:** Instead of checking function bytes, malware can look for known DLLs loaded in its process that belong to analysis tools or AV. Many sandboxes inject helper DLLs or known libraries. For example, Sandboxie injects `SbieDll.dll`, certain AVs use `snxhk.dll` (Avast) or `avghookx.dll` (AVG) ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,dir_watch.dll%20%28iDefense%20Labs)). Malware can enumerate loaded modules via `EnumProcessModules` or walk the PEB loader data and check module names. If it finds any of those known names, it can assume it’s under analysis or in a sandbox and then act accordingly (halt, mislead, etc.).
-
-**Code (check for sandbox DLLs):**
-
-```cpp
-#include <windows.h>
-#include <tlhelp32.h>
-#include <iostream>
-int main() {
-    const char* blacklist[] = {
-        "sbiedll.dll",    // Sandboxie
-        "api_log.dll",    // CWSandbox/iDefense
-        "dir_watch.dll",  // CWSandbox
-        "dbghelp.dll",    // (could indicate a debugger present if loaded unusually)
-        "avghookx.dll",   // AVG
-        "snxhk.dll",      // Avast
-        NULL
-    };
-    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetCurrentProcessId());
-    MODULEENTRY32 mod; mod.dwSize = sizeof(mod);
-    if(Module32First(snap, &mod)) {
-        do {
-            for(int i=0; blacklist[i]; ++i) {
-                if(_stricmp(mod.szModule, blacklist[i]) == 0) {
-                    std::cout << "Detected analysis module: " << mod.szModule << "\n";
-                }
-            }
-        } while(Module32Next(snap, &mod));
-    }
-    CloseHandle(snap);
-}
-```
+     *Note:* The above is a typical setup based on virtio-fs documentation ([virtiofs - shared file system for virtual machines / Standalone usage](https://virtio-fs.gitlab.io/howto-qemu.html#:~:text=qemu,drive%20if%3Dvirtio%2Cfile%3Drootfsimage.qcow2)). Adjust paths and sizes as needed. Once QEMU boots with these options, log into the guest and **mount the virtio-fs** filesystem:  
+     ```bash
+     mkdir /mnt/hostshare  
+     mount -t virtiofs myfs /mnt/hostshare
+     ```  
+     Now `/mnt/hostshare` in the guest should show the contents of `~/shared_test` from the host. Test it by creating or editing files from both sides. This confirms that virtiofsd and QEMU are working together.  
 
-This code takes a list of known hook/analyzer DLL names and checks the process modules for any matches. If found, it prints a detection message. In real malware, it might simply exit if any are found. The list in this example includes Sandboxie’s DLL, CWSandbox’s logging DLLs, common AV hook DLLs, etc. (The Al-Khaser project provides a longer list of such DLL names that malware might search for ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,dir_watch.dll%20%28iDefense%20Labs)).)
+- **Testing Baseline Behavior:** Before making any changes, it’s important to have a baseline. Run simple I/O tests on the shared filesystem *as it is now*. For example, in the guest:  
+  - Copy a large file (`dd if=/dev/zero of=/mnt/hostshare/test.bin bs=1M count=500`) and note the throughput.  
+  - Run `fio` (if installed in guest) on `/mnt/hostshare` with a mix of reads and writes.  
+  - Observe CPU usage: run `top` or `pidstat` on the host to see how much CPU `virtiofsd` is using and how much system vs user time is spent (this will be useful to compare after improvements).  
 
-**Mitigation:** **Sandbox providers** should avoid leaving obvious “footprints” like special DLLs in the target process. Modern sandboxes try to operate without introducing custom modules. If a user-space agent is needed, it’s often given a random name or something that mimics a legitimate module. Even then, malware could detect unusual modules, so minimizing loaded modules is best. **Analysts** running malware manually should not inject tools into the process that are easily identified (for example, running the sample under Sandboxie or with certain monitoring tools will load those DLLs – better to avoid that). If you must use such tools, be aware the malware might behave differently. From a development perspective, using OS-provided frameworks (like ETW, or WMI outside the process) can gather info without injecting libraries. In summary, keep the analysis environment’s in-process footprint as slim and normal as possible.
+  This baseline testing not only verifies your setup but also gives you a reference point for later benchmarking. 
 
-### System API Abuse for Sandbox Detection
+- **Automated Testing & QEMU’s Tests:** QEMU has an extensive testsuite (unit tests, functional tests, etc., some using the Avocado framework). For our project, relevant tests might be under `tests/qtest/` or integration tests for virtio-fs. Run `ninja -C build check` to execute QEMU’s built-in tests ([Features/IOUring - QEMU](https://wiki.qemu.org/Features/IOUring#:~:text=How%20to%20use%20it)) – ensure they pass in your environment to confirm everything is built correctly. If there are specific virtio-fs tests (for example, look for any scripts in `tests/avocado/` related to virtiofs), try running those. This can catch regressions if you introduce a bug later.  
 
-**How it works:** Malware can also use system APIs to gather info that indirectly indicates a sandbox. For example, calling `NtQueryInformationProcess` with `ProcessDebugPort` can tell if the process is being debugged or under a job object – some sandboxes restrict processes with job objects, which could be detectable. Another example is using `NtQuerySystemInformation` for system-wide details: a sandbox might have certain limits (like only one or two processes running, or specific job limits). If malware finds, say, that the only processes running are itself and system processes, it might suspect a sandbox. These are more heuristic and not definitive by themselves.
+- **Debugging Tools:** If the VM or virtiofsd crashes during testing, use GDB to debug. For instance, you can start QEMU under GDB with:  
+  ```bash
+  gdb --args build/qemu-system-x86_64 -enable-kvm -m 2048 ... (rest of args)
+  ```  
+  and then use breakpoints or `run` until crash to get a backtrace. Similarly, you can debug virtiofsd by running `gdb --args virtiofsd ...args...`. Being comfortable with stepping through code in GDB will help when you start modifying complex logic.  
 
-In addition, some sandbox products might set specific environment variables or memory values. Malware can check for those if known.
+- **Iterative Development:** Going forward, each time you implement a part of the FUSE-over-io_uring feature, you will:  
+  - Rebuild QEMU or virtiofsd (depending on where the change is),  
+  - Re-run the virtiofsd daemon and QEMU VM as above,  
+  - Mount the share in the guest and execute test operations (like reading/writing files),  
+  - Verify correct behavior (no errors in dmesg or crashes), and measure performance if applicable.  
 
-**Mitigation:** For sandbox developers, the strategy is to **avoid drastic deviations from normal system behavior**: if your sandbox uses job objects or other containment, try to use mechanisms that are transparent to the process (or at least don’t flag as a debug port or such). For example, if you use a Job, you might give it allowances so queries don’t reveal suspicious limitations. Keep the number of running processes, loaded drivers, etc., within normal ranges. **Analysts** likely can’t change these things easily but should know that malware might be checking them – if a sample only runs on a very “lived-in” system, you might need to collect data on a real host (or create an analysis VM that actually has many programs installed and running to appear busy).
+  To speed up the cycle, automate where possible. You can write a small shell script to launch virtiofsd and QEMU with the desired parameters. For example, a script `run_vm.sh` that kills any previous virtiofsd, starts a new one, then launches QEMU with one command. This way you avoid typing long commands each time.  
 
-## Timing-Based Evasion Techniques
+- **Testing edge cases:** In addition to normal reads/writes, test things like creating many small files, metadata-heavy operations (e.g., `find . -type f` on the shared directory), unmounting and remounting, etc. This helps ensure your changes don’t break less common operations. Keep an eye on the console output of virtiofsd; add verbose logging (virtiofsd usually has a `-d` debug flag) to see the sequence of FUSE requests and responses. This will be invaluable when you switch to the io_uring mode – you can compare that the functional behavior is the same.  
 
-Timing attacks are a classic anti-sandbox strategy. Malware can intentionally delay execution or measure time differences to detect if it’s running slower or faster than normal due to instrumentation, or if the sandbox is fast-forwarding time. They can also simply stall to outwait analysis.
+Establishing this build-and-test routine early (by Week 3) will make the development phase much smoother. You’ll be confident that you can quickly try out changes and verify them, which is key in an open-source project where rapid iteration and feedback are the norm.
 
-### High-Resolution Timing (RDTSC Instruction)
+## Benchmarking and Profiling Pipeline (Weeks 5–8)  
+Once you begin implementing the “FUSE over io_uring” feature, you will need to measure its impact and ensure it meets performance goals. Set up a benchmarking and profiling strategy to collect data **before and after** your changes:
 
-**How it works:** The `RDTSC` instruction reads the CPU’s time-stamp counter, giving a high-resolution tick count. Malware can use it to measure small time intervals very precisely. In a VM, `RDTSC` might execute more slowly or the time may jump oddly because of VM exits. A known trick is to execute `RDTSC`, then an innocuous instruction that causes a VM exit (like `CPUID`), then `RDTSC` again ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=Timing%20Attacks%20%5BAnti)). The time difference between the two RDTSCs will be much larger on a VM (because the CPUID caused a trap to the hypervisor) than on real hardware. Malware like TDL4 and others have used this to detect virtualization by measuring timing discrepancies in the order of microseconds.
+- **Select Benchmark Tools and Metrics:** For filesystem and I/O performance, **fio** is an excellent tool ([Performance benchmarking with Fio on Nutanix](https://portal.nutanix.com/kb/12075#:~:text=Fio%20is%20a%20benchmarking%20and,layer%20of%20the%20Linux%20kernel)). It can generate read/write workloads with various block sizes, queue depths, and patterns (random vs sequential). Plan a few representative fio jobs to simulate workloads: e.g., sequential 4MB writes (to measure throughput), random 4KB reads (to measure IOPS and latency), and mixed read/write. You can run fio inside the guest targeting the virtio-fs mount, or on the host against the FUSE export (though guest view is more realistic). Key metrics to collect: I/O **throughput** (MB/s), **IOPS**, and **latency** (mean and tail latencies).  
 
-**Code (RDTSC timing):**
+- **Establish Baseline Performance:** Before enabling io_uring in FUSE, run these fio workloads on the baseline system. Save the results (throughput, IOPS, latency) for comparison. Also note CPU usage during the run: how much CPU % does `virtiofsd` consume? Does it saturate a single core? How many context switches are happening? You can use `perf stat` on the virtiofsd process to count context-switches, CPU cycles, instructions, etc., and `perf record -g` to profile where time is spent. For example:  
+  ```bash
+  perf stat -e context-switches,cycles,instructions -p $(pidof virtiofsd) sleep 30
+  ```  
+  while fio runs, to get an overview of switches and CPU usage. Later, you’ll do the same after your changes to see the difference (ideally, context switches should drop and perhaps cycles per operation too).  
 
-```cpp
-#include <iostream>
-#include <intrin.h>
-#include <windows.h>
+- **Implement & Benchmark Iteratively:** When you have an initial implementation of FUSE over io_uring (even a partial one), run the same benchmarks. Don’t wait until the project is “complete” – test early versions to verify you’re actually getting improvement. If the performance isn’t as expected, use profiling to investigate. For example:  
+  - Run `perf top` or `perf record` on virtiofsd to see where it spends CPU. With io_uring, ideally less time is spent in kernel context-switch or read/write syscalls. If you still see a lot of time in `read()` or `write()`, maybe your io_uring path isn’t being used as intended.  
+  - Use `strace -c -p $(pidof virtiofsd)` to summarize syscalls during a benchmark. In baseline, you’ll see lots of `read(fdFuse)` and `write(fdFuse)` calls. In the io_uring version, you expect far fewer of those (maybe replaced by `io_uring_enter` calls if any). This is a quick sanity check.  
 
-unsigned long long rdtsc(){
-    return __rdtsc();
-}
-
-int main(){
-    unsigned long long t1 = rdtsc();
-    // Cause a VM exit potentially
-    __cpuid((int[4]){0}, 0); // CPUID with EAX=0
-    unsigned long long t2 = rdtsc();
-    unsigned long long delta = t2 - t1;
-    std::cout << "Delta ticks: " << delta << "\n";
-    if(delta > 1000) { // threshold in ticks (arbitrary small threshold)
-        std::cout << "High overhead detected (possible VM sandbox)\n";
-    }
-}
-```
+- **Compare Results and Identify Regressions:** Create a small report of baseline vs new performance. For each test scenario, note the improvement (or any regressions). For instance, you might find sequential throughput improves modestly, but latency for small ops improves significantly due to fewer context switches. If something regresses (e.g., maybe CPU usage went up or a certain pattern got slower), profile that case to understand why. It could indicate a bug or an area for optimization (for example, maybe the io_uring submission isn’t batching as hoped).  
 
-This code measures the overhead of a CPUID call. On real hardware, the difference might be, say, a few hundred cycles, whereas under a VM it could be thousands if a VM-exit occurred. The threshold of 1000 here is arbitrary; real malware might calibrate or use multiple samples to be sure.
+- **Use Kernel Tracing if Needed:** To deeply understand what’s happening, you can use ftrace or `trace-cmd` on the host. Enabling events like `fuse:*` or `io_uring:*` can show timing of events. For example, trace how long a FUSE request sits in the queue. This can help demonstrate that with io_uring, the wait time is reduced. However, use tracing only if needed, as it can be complex; often perf and logs will suffice.  
 
-**Mitigation:** **Sandbox devs** have a few options: (1) **Trap and manipulate RDTSC** – some hypervisors let you intercept RDTSC and you could lie about the timing to make it seem consistent. However, intercepting every RDTSC has a performance cost. (2) **Offer native execution** – advanced sandboxes might single-step or emulate only parts of execution, but let timing-critical sections run natively to preserve timing (this is complex). (3) Many sandboxes choose to ignore these subtle timing checks and instead focus on not introducing *gross* delays. Over the years, hypervisors have reduced overhead for instructions like CPUID. New virtualization extensions also provide ways to avoid trapping on CPUID if not needed. **Analysts** can try to defeat timing checks by using a very fast machine for the sandbox (so even if there is overhead, it’s minimized). If one suspects a sample is stalling via RDTSC loops, one trick is to run it under an emulator that can fast-forward the CPU counter or patch the binary to remove those loops. In general, though, modern malware might combine timing checks with others, so mitigating just this may not be enough.
+- **Memory and Threading Considerations:** While benchmarking, observe if the new method affects memory usage or CPU concurrency. For example, does virtiofsd with io_uring use more memory for buffers? Is it utilizing multiple cores better (or worse) than before? Tools like `htop` can show if virtiofsd is multi-threaded and using multiple CPUs (virtiofsd can use a thread pool for parallel requests). Ensure your benchmarks cover both single-threaded and multi-threaded access to the FS (e.g., fio with `numjobs=4` to simulate 4 threads doing I/O). 
 
-### Sleep and Clock Skew Detection
+- **Benchmarking QEMU Block vs Virtio-FS (Optional):** For additional context, you might compare virtio-fs performance to virtio-blk or virtio-9p in similar scenarios. This isn’t directly required, but it can be useful to see how close virtio-fs (with your improvements) comes to, say, a direct virtio-blk raw disk in throughput or latency. It gives a sense of how much overhead remains.  
 
-**How it works:** A common sandbox evasion is simply calling `Sleep` for a long time (minutes or hours) to see if the sandbox will fast-forward or terminate the analysis early. Many sandboxes instrument or modify Sleep to skip long waits. Malware can detect this by comparing real time before and after sleeping. For example, call `GetTickCount` or `QueryPerformanceCounter`, then Sleep for 10 seconds, then check the clock again. If the reported elapsed time is much less than expected (or zero), the sandbox likely skipped the sleep. Some malware use shorter repeated sleeps to accumulate a delta and catch acceleration ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=%2A%20Sleep%20,IcmpSendEcho%20%28CCleaner%20Malware)) ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,CreateWaitableTimer)). Others use alternate timers like `SetTimer` or `NtDelayExecution` to see if those are hooked ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,NtWaitForSingleObject)).
+- **Long-Run Stability Tests:** Before finalizing changes, run longer tests (several minutes or more) to catch any resource leaks or stability issues under load. Also test with different caching modes (`cache=none` vs `cache=auto` in virtiofsd) because io_uring might have different effects depending on whether DAX or page cache is in use. Make sure that under heavy load your implementation doesn’t deadlock or crash. Using tools like **Valgrind** on virtiofsd (if using the C version) or Rust’s `cargo test` (for the Rust version) can help catch memory errors.  
 
-**Code (Sleep acceleration check):**
+- **Documenting Performance:** As you gather results, document them in a log or report. This will be very useful when communicating with the QEMU community – performance patches are always scrutinized to ensure they deliver benefits. Having clear before-and-after numbers and charts will bolster your patch submission. It also helps you track progress during GSoC (e.g., by mid-term, show a small improvement, by final, show the full improvement).  
 
-```cpp
-#include <windows.h>
-#include <iostream>
-int main() {
-    DWORD t1 = GetTickCount();
-    Sleep(5000); // sleep 5 seconds
-    DWORD t2 = GetTickCount();
-    DWORD elapsed = t2 - t1;
-    std::cout << "Elapsed by clock: " << elapsed << " ms\n";
-    if(elapsed < 4000) {
-        std::cout << "Detected accelerated sleep (sandbox likely)\n";
-    } else {
-        std::cout << "Normal sleep behavior\n";
-    }
-}
-```
-
-If a sandbox skips or fast-forwards the Sleep, the `GetTickCount` difference might be very small (or the same, if they froze the tick count). Normal behavior would be around 5000ms (give or take scheduling). Malware Locky had a variant of this: it performed a Sleep, but also did some meaningless work with `GetProcessHeap` and `CloseHandle` around it to thwart naive API hooking of Sleep ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,NtWaitForSingleObject)).
-
-**Mitigation:** **Sandboxes** face a dilemma: either let malware sleep (delaying analysis) or skip it and risk detection. A common mitigation is to **skip sleeps but also adjust the system clock** forward by the same amount, so from the program’s perspective time advanced normally. Sandboxes can hook `GetTickCount`, `QueryPerformanceCounter`, etc., to add the skipped time offset. This must be done consistently across all time sources to avoid tipping off the malware. Another approach is to reduce the sleep intervals by a factor (e.g., make a 5s sleep actually 1s, but that’s detectable if the program measures absolute time). The more robust approach is clock manipulation: ensure that if you accelerate Sleep, you also make the observed time jump. This can be tricky but is implemented in some analysis systems. **Analysts** running manually can simply wait out the sleep or patch the malware binary to remove long sleeps (if they suspect a sample is just stalling, a quick patch to the Sleep call or altering its parameter can force it to proceed). Being patient is a valid strategy too – if you have the time, letting the malware actually sleep will defeat its attempt to outrun a sandbox.
-
-### Multi-Stage Delays and Triggers
-
-**How it works:** Some malware avoid doing anything interesting for an extended period or until certain conditions are met (not necessarily human interaction, but time-based triggers). For example, the malware might check system uptime and only activate after the machine has been on for a few hours. In a sandbox that boots a fresh VM (uptime low), the malware would never run its payload. Another technique is performing expensive computations (like huge loops or solving complex math problems) to waste time. Recently, malware like **LummaC2** introduced a novel twist: using complex mathematical operations (trigonometry) as a time-delay that also serves as a human-check (discussed in the next section) ([LummaC2 Malware Deploys New Trigonometry-Based Anti ...](https://thehackernews.com/2023/11/lummac2-malware-deploys-new.html#:~:text=LummaC2%20Malware%20Deploys%20New%20Trigonometry,principle%20of%20trigonometry%20to)). The idea is that a sandbox might cut off if CPU usage is pegged for too long with no output.
-
-Malware might also chain multiple small sleeps or yield calls (`SwitchToThread`, `NtYieldExecution`) repeatedly, which might evade simple hooking that only patches Sleep calls ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,module%20bounds%20based)).
-
-**Mitigation:** Many of these delays can be handled by **increasing sandbox analysis time** (run malware longer) or detecting loops by monitoring CPU usage (if the sample uses near 100% CPU for a sustained time doing nothing I/O-related, the sandbox could suspect a delay loop and try to handle it by speeding up or breaking out). For analysis, **dynamic binary translation** frameworks can sometimes skip over long loops. **Sandbox devs** have experimented with measuring instruction retirement count – if an insane number of instructions executed with no interesting behavior, maybe break out of the loop. But this is advanced and not widespread. A practical mitigation is to simply allow more time for analysis or have a second phase where the sandbox picks up the process after a while (some sandboxes take memory snapshots and can resume execution later, or use checkpointing to let time pass quicker). As an analyst, recognizing such patterns (e.g., malware sits idle or in computation) might mean you need to intervene (with a debugger to skip the loop) or just wait it out if feasible.
-
-### Network and External Timing Checks
-
-**How it works:** Some malware use external resources to detect sandboxing. For instance, they might attempt a network connection (like `IcmpSendEcho` ping as seen in some malware ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=%2A%20WaitForMultipleObjects%20,CreateTimerQueueTimer))) and measure response time or check if it’s blocked. A sandbox might simulate network or have no network; if malware expects a certain behavior (like an internet connection) and doesn’t see it, it may not proceed. Timing-wise, if a sandbox accelerates Sleep but not network APIs, the malware might notice that its Sleep 5 seconds felt short but a real network request still took real time (inconsistency). There are also cases where malware checks the latency of certain operations (file access speed, network speed) to guess if it’s in a constrained environment.
+By Week 8, you should have a solid setup to quantify your work. Regularly running benchmarks will guide optimizations and verify that you’re on the right track. Remember, the goal of this project is performance **and** correctness – so use profiling not only to speed things up but also to ensure you’re not inadvertently adding latency or CPU overhead elsewhere.
 
-**Mitigation:** **For sandbox developers**, providing a realistic network environment is important. Ensure that network calls succeed (even if to a sinkhole) rather than always time out instantly (which could signal an isolated sandbox). Keep consistency in how time flows for all operations. It’s difficult to cover every edge case, but general principle: don’t let the malware observe glaring inconsistencies (like time jump for Sleep but not for other waits). **Analysts** using sandbox services might try running the sample with internet access on vs off to see differences. If a sample seems inert, it might be waiting for a network response that never comes in an offline sandbox; giving it a dummy internet connection or simulating the expected server can coax it into action.
+## Hardware Recommendations for Development & Testing  
+Working on QEMU and running multiple VMs can be resource-intensive. A capable development machine will make your 2-month effort much more pleasant. Here are our hardware recommendations for smooth compiling, debugging, and benchmarking:
 
-## Environment & Configuration Detection Techniques
+- **CPU:** A multi-core processor is important. Aim for at least a **quad-core** CPU (Intel i5/i7 or AMD Ryzen 5/7 class). More cores (6, 8, or even 16) will speed up compilation (Ninja can parallelize builds) and allow you to dedicate cores to the guest VM and virtiofsd. For example, with 8 cores you could pin the guest to 4 and leave 4 for the host/virtiofsd to avoid contention. Also, ensure the CPU supports virtualization extensions (Intel VT-x or AMD-V) so you can use KVM. Virtio-fs performance in a TCG (no-KVM) environment is dramatically lower, so KVM is highly recommended.  
 
-These techniques involve inspecting the system’s configuration, hardware, and software environment for clues of virtualization or sandboxing. Malware often combines many of these checks to build confidence that it’s not on a normal user’s machine.
-
-### Registry Artifacts of Virtualization
-
-**How it works:** Virtualization software leave footprints in the Windows Registry. Malware can query specific keys/values known to be present on VMs ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=Check%20Registry%20Keys%20B0009,%5B5)). Examples include:
-
-- **VirtualBox:** Keys under `HKLM\HARDWARE\ACPI\DSDT\VBOX__` and similar for FADT and RSDT (ACPI tables labeled "VBOX__") ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,SYSTEM%5CControlSet001%5CServices%5CVBoxVideo%20%28VBOX)), or `HKLM\SOFTWARE\Oracle\VirtualBox Guest Additions` ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,VMware%20Tools%20%28VMWARE)).
-- **VMware:** Keys like `HKLM\SOFTWARE\VMware, Inc.\VMware Tools` ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,SOFTWARE%5CWine%20%28WINE)), or in hardware device map: `HKLM\HARDWARE\DEVICEMAP\Scsi\Scsi Port 0\...Target Id 0\Logical Unit Id 0\Identifier` containing "VMWARE" ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,SYSTEM%5CControlSet001%5CControl%5CSystemInformation%20%28SystemProductName)).
-- **Others:** `HKLM\SYSTEM\ControlSet001\Control\SystemInformation\SystemProductName` often is "VMware Virtual Platform" on VMware ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,Registry%20Keys%20artifacts)), or "VirtualBox" for VirtualBox, etc.
-
-Malware uses Windows API (like `RegOpenKeyEx` and `RegQueryValueEx`) or WMI to check these. If it finds values containing strings like "VBOX", "VMware", it knows it’s in a VM. For instance, one technique is simply searching the entire registry for those substrings (though that’s slower).
-
-**Code (registry check example):**
-
-```cpp
-#include <windows.h>
-#include <iostream>
-
-bool RegistryKeyExists(HKEY root, const char* subkey) {
-    HKEY hKey;
-    LONG result = RegOpenKeyExA(root, subkey, 0, KEY_READ, &hKey);
-    if(result == ERROR_SUCCESS) {
-        RegCloseKey(hKey);
-        return true;
-    }
-    return false;
-}
-
-int main(){
-    const char* vboxKey = "HARDWARE\\ACPI\\DSDT\\VBOX__";
-    const char* vmwareKey = "SOFTWARE\\VMware, Inc.\\VMware Tools";
-    if(RegistryKeyExists(HKEY_LOCAL_MACHINE, vboxKey)) {
-        std::cout << "VirtualBox ACPI key present (VM detected)\n";
-    }
-    if(RegistryKeyExists(HKEY_LOCAL_MACHINE, vmwareKey)) {
-        std::cout << "VMware Tools key present (VM detected)\n";
-    }
-}
-```
-
-This sample checks two known keys (one for VirtualBox, one for VMware). There are many such keys; malware may check a whole list of them ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=3,vmwvmcihostdev%20%E2%80%A2SYSTEM%5CCurrentControlSet%5CControl%5CVirtualDeviceDrivers)). If any exist, it concludes it’s running in that VM environment.
-
-**Mitigation:** **Developers of analysis VMs** can attempt to remove or alter these registry entries. For example, not installing VMware Tools in the sandbox VM will avoid the VMware Tools key, but then you lose the utility of those tools (trade-off). Some keys (like ACPI entries) might be unavoidable as they’re created by virtual hardware. However, one can spoof them – e.g., VirtualBox allows customizing the DMI strings so they don’t read "VBOX". Using such features, sandboxes can try to use generic values (make the VM identify as a Dell or other vendor in those keys). Note that sophisticated malware might look for *absence* of expected genuine values too, but generally, removing obvious VM references helps. **Researchers** setting up VMs can use public guides on hardening VMs (which suggest editing registry, using tools like RedPill Detect to scan your VM for obvious markers and then mitigating them). If a particular sample is known to check a certain key, an analyst might temporarily create that key on a real system to see if the malware aborts (as a way to confirm its checks). But overall, to get malware to execute, we want to hide these keys in the sandbox.
-
-### Virtual Hardware Devices and Drivers
-
-**How it works:** Malware can enumerate hardware devices via SetupAPI or other means and look for names that match virtual hardware. For example, listing the disk drives might reveal a model string "VBOX HARDDISK" or "VMware Virtual disk". Listing PCI devices might show vendor IDs that belong to VMware or VirtualBox. Similarly, malware might attempt to open known device interfaces: for instance, `\\.\VBoxMiniRdrDN` or `\\.\HGFS` (VMware shared folder device) ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=)). If those device objects exist, it’s a giveaway. It can also check driver names loaded in the OS: e.g., by using `EnumDeviceDrivers` or querying the Service Control Manager for known driver services like "VBoxGuest" or "vmicheat" etc.
-
-Some known driver/service names:
-- VirtualBox drivers: VBoxMouse, VBoxGuest, VBoxSF, VBoxVideo, etc. ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=%2A%20,system32%5Cvboxogl.dll)) ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,SYSTEM%5CControlSet001%5CServices%5CVBoxVideo%20%28VBOX)).
-- VMware drivers: vm3dmp, vmci, vmmemctl, vmmouse, vmhgfs, etc. ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=%2A%20,%2A%20Directories%20artifacts)) ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=%2A%20,%2A%20Directories%20artifacts)).
-- These can be found in `SYSTEM\CurrentControlSet\Services` or via `EnumServicesStatus` API.
-
-**Code (device and driver check example):**
-
-```cpp
-#include <windows.h>
-#include <iostream>
-
-// Try opening a device by name
-bool DeviceExists(const char* deviceName) {
-    HANDLE h = CreateFileA(deviceName, GENERIC_READ, FILE_SHARE_READ, NULL,
-                           OPEN_EXISTING, 0, NULL);
-    if(h != INVALID_HANDLE_VALUE) {
-        CloseHandle(h);
-        return true;
-    }
-    return false;
-}
-
-int main(){
-    if(DeviceExists("\\\\.\\VBoxGuest")) {
-        std::cout << "VBoxGuest device present (VirtualBox detected)\n";
-    }
-    if(DeviceExists("\\\\.\\HGFS")) {
-        std::cout << "HGFS device present (VMware shared folder detected)\n";
-    }
-    // Check for a known driver in memory by loading its module
-    HMODULE mod = GetModuleHandleA("vmmouse.sys");
-    if(mod) {
-        std::cout << "vmmouse.sys loaded (VMware detected)\n";
-    }
-}
-```
-
-This tries to open `\\.\VBoxGuest` (a device interface for VirtualBox guest additions) and `\\.\HGFS` (VMware host-guest file system). It also checks if the VMware mouse driver is loaded. Malware can use similar approaches or more systematic ones (like SetupDiEnumDeviceInfo for disk class GUID and check device names ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,System%20Firmware%20Tables))). If any of these indicate virtualization, it can act.
-
-**Mitigation:** **Sandbox maintainers** can hide or remove these artifacts. For instance, if shared folders aren’t needed, disable that feature so `\\.\HGFS` doesn’t exist. If possible, install generic drivers in place of VM-specific ones (some VMs allow using basic drivers that don’t expose obvious names, at some cost of performance). Renaming drivers is not trivial because they’re expected by the hypervisor, but one could potentially hex-edit the displayed name (not commonly done). Using older or alternative virtual hardware can sometimes help (e.g., using a generic E1000 NIC instead of the default VM NIC if the default has a blatant name). **Analysts** can try running the malware in a more “bare” VM – e.g., not installing guest additions, so fewer virtual devices exist. However, note that absence of those might cause other differences (like poor display resolution) that malware might notice. It’s a cat-and-mouse game. A balanced approach is to carefully choose which features to enable: enough to analyze malware but not so many that obvious strings are present. Monitoring the malware’s attempts (using tools like Procmon or Sysmon) can also tell you which device or registry it checked, so you can address that specifically next run.
-
-### Process and Service Enumeration
-
-**How it works:** As mentioned earlier, malware will look for processes indicative of a VM or sandbox. Beyond just checking for analysis tool processes, it specifically looks for processes like `vboxservice.exe` or `vmtoolsd.exe` that are the guest additions/services for VirtualBox and VMware ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=)) ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=4,exe)). If those are running, the environment is clearly a VM. Malware can call WinAPI (`CreateToolhelp32Snapshot` to list processes, or WMI `Win32_Process` query) to get all running processes and compare names.
-
-Similarly, enumerating Windows services by name can reveal things like "VBoxService" or "VMTools" in the service list ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=6)). If found, that’s a dead giveaway.
-
-**Code (process check example):**
-
-```cpp
-#include <windows.h>
-#include <tlhelp32.h>
-#include <iostream>
-int main(){
-    const char* vmProcesses[] = {"vboxservice.exe", "vboxtray.exe", "vmtoolsd.exe", "vmwaretray.exe", NULL};
-    bool vmProcFound = false;
-    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    PROCESSENTRY32 pe; pe.dwSize = sizeof(pe);
-    if(Process32First(snap, &pe)) {
-        do {
-            for(int i=0; vmProcesses[i]; ++i) {
-                if(_stricmp(pe.szExeFile, vmProcesses[i]) == 0) {
-                    std::cout << "Found VM process: " << pe.szExeFile << "\n";
-                    vmProcFound = true;
-                }
-            }
-        } while(Process32Next(snap, &pe));
-    }
-    CloseHandle(snap);
-    if(vmProcFound) {
-        std::cout << "VM environment detected via process list.\n";
-    }
-}
-```
-
-This scans running processes for typical VirtualBox and VMware process names ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=retrieve%20this%20info%20in%20multiple,exe)). (In reality, one might maintain a larger list including processes from other virtualization software or known sandbox agent processes.)
-
-**Mitigation:** **To avoid detection,** a sandbox could choose to not run these services, but then you lose functionality (e.g., no clipboard sync if you kill VMware Tools). Another approach is renaming: one could try to rename the service executables to something inconspicuous. However, VMware Tools is hard-coded to its service names, so that’s non-trivial. Instead, some sandboxes opt not to use official guest additions and rely on their own mechanisms or nothing at all. For example, they might tolerate lower performance or use VNC for viewing the VM rather than the high-performance VM drivers. This removes those processes at the cost of convenience. **Analysts** can create VMs where these services are disabled when running malware. If a sample is known to look for `vboxservice.exe`, you can stop that service before execution. The trade-off is that certain features (like shared folders, time sync) provided by those services won’t be active – but those could themselves expose the environment. In summary, minimize obvious VM-specific processes: either disable them or use a different approach that doesn’t require them.
-
-### Hardware Fingerprints (CPU Cores, Disk Size, Peripherals)
-
-**How it works:** Malware often checks if the machine’s specifications are oddly low or too "clean". We saw memory; similarly, **CPU core count** is a factor. Many VMs (especially older sandbox VMs) have only 1 virtual CPU by default. A single CPU machine in 2025 is rare, so malware flags that ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=virtual%20environment%20is%20suspected,related%20to%20Unprotect%20technique%20U1340)). It can call `GetSystemInfo` or WMI `Win32_ComputerSystem` (NumberOfProcessors property) ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,DLL%20Exports%20and%20Loaded%20DLLs)). 
-
-Disk size is another. Sandboxes might use small disks (e.g., a 40GB virtual disk). Modern systems often have hundreds of GB or more. Malware can use `GetDiskFreeSpaceEx` or `IOCTL_DISK_GET_LENGTH_INFO` to get total disk size and compare to some threshold (one source suggests less than 80GB might be considered suspiciously small) ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=determine%20whether%20the%20machine%20has,Different%20aspects%20of%20the%20hardware)). 
-
-Checking for absence of typical peripherals: for example, no printer installed might be a red flag in some malware logic ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=Modern%20Specs%20Check%20,Checks)). A real corporate machine often has some network printers or at least default PDF printer. No printers at all could mean a fresh VM. Another example: keyboard layout – some banking trojans check if the system keyboard layout is one that a real user in the target region would have. If it’s the default "EN-US" on a machine that’s supposed to be in Brazil, it might guess sandbox (or simply not the target user) ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,Known%20Sandbox%20hostnames%20and%20usernames)).
-
-**Code (core count and disk size example):**
-
-```cpp
-#include <windows.h>
-#include <iostream>
-#include <iomanip>
-#include <string>
-
-int main(){
-    SYSTEM_INFO si;
-    GetSystemInfo(&si);
-    if(si.dwNumberOfProcessors < 2) {
-        std::cout << "Only " << si.dwNumberOfProcessors << " CPU core - possibly VM\n";
-    }
-
-    ULARGE_INTEGER freeBytes, totalBytes;
-    if(GetDiskFreeSpaceExA("C:\\", NULL, &totalBytes, &freeBytes)) {
-        unsigned long long totalGB = totalBytes.QuadPart / (1024ULL*1024*1024);
-        std::cout << "C: drive size: " << totalGB << " GB\n";
-        if(totalGB < 80) {
-            std::cout << "Disk size is small ("<< totalGB <<"GB) - likely VM\n";
-        }
-    }
-}
-```
+- **Memory (RAM):** QEMU builds are memory hungry, and running a VM plus possibly a second VM for testing will use RAM. We suggest **16 GB RAM minimum**. With 16 GB, you can allocate a couple gigabytes to your guest and use the rest for build processes and the host OS. If you can get 32 GB, that’s even better – it allows for larger guest memory (useful if testing DAX with large cache=always, which can map a lot of host memory) and more aggressive parallel compilation (each compiler job can use 1GB+ RAM easily for QEMU). Insufficient RAM can lead to swapping during compile or runtime, which will skew performance results.  
 
-This prints the number of CPU cores and C: drive size, flagging if cores <2 or disk <80GB ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=determine%20whether%20the%20machine%20has,Different%20aspects%20of%20the%20hardware)) ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=Modern%20Specs%20Check%20,substandard%20specifications%20indicates%20a%20virtual)). It’s a simplistic check, but many malware do exactly this kind of basic profiling.
+- **Storage:** Use an **SSD** for your development environment. Compiling QEMU involves thousands of small file reads/writes (source code, object files), where SSDs hugely outperform HDDs. An NVMe SSD is ideal, but any SATA SSD is fine. This will reduce build times (full build can go from 30+ minutes on an HDD to just a few minutes on an SSD with multi-core). It also helps your VMs – if your guest image is on the SSD, I/O benchmarks will measure more of virtiofs overhead rather than being limited by a slow disk. Ensure you have enough space (QEMU source + build can take ~GBs, each VM image can be several GB).  
 
-**Mitigation:** **Configure the VM to look like a normal machine.** That means giving it at least 2 CPU cores (if not 4 or 8 to mimic a high-end system). Allocate a larger disk (or at least make Windows think it has a large disk – you can resize the virtual disk or attach a second disk). Perhaps actually fill the disk with some data so it’s not entirely empty (an empty 100GB disk might also look odd, but less so than a tiny disk). Install virtual printers or dummy devices to simulate a more complete environment (adding a fake printer or two can be done via Windows settings and doesn’t require actual hardware). Set the keyboard layout and locale to match what a real user would have (for instance, if analyzing malware targeting Europe, set the VM’s locale and keyboard appropriately). Essentially, **avoid default or sparse configurations**. Sandboxes are getting better at this, often randomizing these values or using templates of real user setups. **Analysts** setting up custom VMs should also consider this: it might mean the difference between malware revealing itself or staying dormant.
+- **Thermals:** When compiling or running benchmarks, your CPU will be under heavy load for extended periods. Good cooling is important to avoid thermal throttling. This is more of a laptop consideration – on a desktop it’s usually fine. If on a laptop, use a cooling pad and keep an eye on temperatures. Throttling could slow down your compile or make performance numbers inconsistent.  
 
-### Network Adapter MAC and IP Checks
+- **Secondary Machine (Optional):** If you have access to a second machine or a server, you can use it to run long benchmarks or kernel builds in the guest, etc., while keeping your main dev machine free. This isn’t required, but some GSoC students use a separate test machine via SSH. At minimum, consider using **tmux** or **screen** sessions so you can run a VM or fio test in the background and continue coding.  
 
-**How it works:** Virtual machine network adapters often have MAC addresses with specific OUI (organizationally unique identifiers) prefixes. For instance, VMware commonly uses MAC starting with `00:50:56`, `00:0C:29`, `00:05:69`, etc., and VirtualBox uses `08:00:27` ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=2,VirtualBox)). Malware can retrieve the MAC addresses of the system’s adapters (via `GetAdaptersInfo` or WMI `Win32_NetworkAdapterConfiguration`) and compare against known VM prefixes ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=2,VirtualBox)). If it finds a match, it knows it’s likely in a VM.
+- **Networking:** Not critical for performance of this project, but ensure you have at least a Gigabit network if you plan to do any network filesystem tests or remote debugging. Virtio-fs mostly uses shared memory, so network isn’t in the picture there. But if you use ssh to log into the guest or transfer files, a reliable network helps.  
 
-Additionally, some sandbox environments might use non-routable or unusual IP ranges consistently (though this is less reliable). More directly, some malware try to perform a reverse DNS lookup of their own IP or check hostnames to see if they are in known cloud/sandbox ranges.
+- **Kernel Version:** Use a newer Linux kernel on your host if possible. For fuse-over-io_uring, you need a kernel that supports it (Linux 6.14 or newer, as the io_uring FUSE patches are slated for 6.14 ([FUSE Hooks Up With IO_uring For Greater Performance Potential In ...](https://www.phoronix.com/news/Linux-6.14-FUSE#:~:text=,14%20stable))). Since Ubuntu 24.04 LTS might ship with an older kernel, consider installing a mainline kernel (from Ubuntu’s mainline PPA or compile 6.15+ yourself) for testing the io_uring functionality. This “hardware” aspect (kernel is sort of software, but fundamental) is important: without a supporting kernel, you can only develop half the feature. Developing against a moving target kernel might be tricky, but for testing, you’ll want to boot into 6.14+ when the time comes to actually see the effect of your changes.  
 
-**Code (MAC address check):**
+In summary, a **desktop or laptop with 4+ cores, 16+ GB RAM, and an SSD** will significantly enhance productivity. Many contributors use such setups for QEMU development. If your current PC is weaker, you can still proceed (QEMU can be built on dual-core/8GB, for example) but expect longer turnaround times for builds and possibly limited benchmarking fidelity. Investing in a bit more hardware muscle, if feasible, will pay off in time saved during the project.
 
-```cpp
-#include <iostream>
-#include <iphlpapi.h>
-#pragma comment(lib, "iphlpapi.lib")
+## Project Focus: Early Deliverables, Prioritization, and Communication  
+Finally, let’s outline how to tackle the project itself within 2 months, emphasizing early wins. In GSoC, it’s crucial to make steady, visible progress to build credibility with mentors and the community. Here’s how you can focus on the first 1–2 deliverables and communicate effectively:
 
-int main() {
-    IP_ADAPTER_INFO info[10];
-    DWORD bufLen = sizeof(info);
-    if(GetAdaptersInfo(info, &bufLen) == ERROR_SUCCESS) {
-        for(PIP_ADAPTER_INFO p = info; p; p = p->Next) {
-            BYTE* mac = p->Address;
-            // Check first 3 bytes of MAC
-            if(mac[0]==0x00 && mac[1]==0x0C && mac[2]==0x29) {
-                std::cout << "VMware MAC address detected: " 
-                          << p->Description << "\n";
-            }
-            if(mac[0]==0x08 && mac[1]==0x00 && mac[2]==0x27) {
-                std::cout << "VirtualBox MAC address detected: " 
-                          << p->Description << "\n";
-            }
-        }
-    }
-}
-```
+- **Break the Project into Milestones:** Divide the “FUSE over io_uring” implementation into smaller tasks that each produce a tangible result. For example, an initial milestone could be *supporting basic read/write requests via io_uring* in virtiofsd. A second milestone could expand support to other FUSE operations (mkdir, unlink, etc.) or optimize buffer handling. By defining these sub-goals, you can work in iterations. Aim to complete a basic working prototype by the end of the first month (mid GSoC) – e.g., *virtiofsd can handle file reads using io_uring and it passes simple tests*. This gives you something to show at the mid-term evaluation.  
 
-This uses `GetAdaptersInfo` to iterate network adapters and prints if a MAC matches VMware’s `00:0C:29` or VirtualBox’s `08:00:27` prefix. (In reality, one would include all known prefixes ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=%2A%20,%28Hybrid%20Analysis)).)
+- **Prioritize Core Functionality:** Focus on the most impactful parts of the feature first. In this case, **file read and write operations** are the critical path for performance, so implement and test those with io_uring early. Metadata operations (like chmod, chown, etc.) are less performance-sensitive, so they could initially continue using the old path if needed. By getting reads/writes on io_uring, you’ll already solve the biggest bottleneck. Ensure this core works end-to-end: submit a read request via io_uring, get completion, send data to guest. Prove that this round-trip works reliably before adding more complexity.  
 
-**Mitigation:** **To mitigate**, one can manually set the MAC addresses of virtual adapters to something other than the defaults. Both VMware and VirtualBox allow setting a custom MAC (preferably one that belongs to a common hardware vendor). Sandboxes often randomize MACs to not use the known OUIs. This is a simple but effective step. **Analysts** should ensure their VM’s MAC isn’t the obvious `08:00:27` etc., when possible. If using NAT network, VirtualBox might auto-generate MACs with its prefix unless changed. Also, having the VM join a network domain or have a host name that isn’t obviously generic can help (though malware also checks hostnames, see next technique). In short: use realistic MAC and network config. One caveat: some licensing or activation might be tied to MAC addresses, but as long as it’s unique, any prefix is fine from a technical perspective.
+- **Incremental Testing & Validation:** After implementing the core io_uring logic for FUSE requests, test it thoroughly with simple scenarios. For instance, modify virtiofsd to use io_uring for reads, and try reading a file from the guest. Compare the result byte-for-byte with the original to ensure correctness. Once confident, switch writes to io_uring, test creating a file, etc. It’s fine if in early stages you handle only a subset of operations with io_uring and fall back to the default for others – just clearly mark TODOs for what’s next. Each incremental improvement should pass all existing tests (regression avoidance) and ideally come with a new simple test you devise for that case.  
 
-### Hostname, Username, and Other Local Identifiers
+- **Performance Checkpoints:** After each deliverable, run a quick benchmark to see if it moves the needle. This not only validates the approach but is motivating. For example, once reads/writes are using io_uring, run the fio read test – you might already see lower CPU usage or higher throughput. Even a 10% improvement is a good sign and something you can report. Conversely, if you see no improvement, that’s a signal to investigate or adjust course early (maybe the implementation isn’t as asynchronous as expected). Catching such issues early is only possible if you measure early.  
 
-**How it works:** Many public sandboxes or corporate images have default hostnames like `WIN-ABC123` or `Sandbox` or known patterns (e.g., "MalwareAnalysisPC"). Similarly, default usernames like `Admin` or `User` that haven’t been changed can indicate an analysis environment. Malware may retrieve the computer name (`GetComputerName` API) and username, and check against a list of known sandbox indicators or just flag very generic names. There have been cases of malware that refuse to run on machines with "SANDBOX" or "MALWARE" in the name.
+- **Communication of Progress:** Make your work visible. This can be through **weekly blog posts** or updates to your mentor. In these updates, highlight what you achieved (e.g., “implemented asynchronous read using io_uring, passing basic tests, saw ~5% throughput improvement in initial benchmark”), what issues you ran into, and what’s next. Early in the project, also share your understanding or design thoughts – for instance, write a brief summary of how you plan to integrate io_uring into the virtiofsd event loop. This helps mentors/course correct if needed.  
 
-Moreover, malware might look at the Windows product ID or registration info – some sandboxes use the same Windows image cloned many times, so the OS product ID might be identical across them. If malware sees a product ID known from analysis reports, it could bail.
+- **Engage with the Community Early:** Once you have a minimal viable change (maybe just a draft patch that adds the io_uring setup and one code path), consider sending an **RFC patch series** to the QEMU mailing list or virtio-fs mailing list. Mark it as “[RFC] virtiofsd: initial support for fuse-over-io_uring” and explain that it’s a work in progress. Include your early performance numbers if available. The goal is to get feedback or at least put it on maintainers’ radar. Even if the code isn’t ready to merge, the discussion can provide valuable pointers (perhaps someone already tried a similar approach, or a maintainer like Miklos Szeredi might give tips on the kernel side). Be sure to follow contributor guidelines when sending patches (checkpatch clean, proper subject prefixes, etc.). By demonstrating this proactiveness, you build credibility as someone serious about upstreaming their work.  
 
-**Mitigation:** **Use unique, innocuous names.** Sandbox providers often randomize the hostname for each analysis or use something inconspicuous (like a common first-name-PC or random string that doesn’t scream VM). Same with the username – use a normal first name or typical corporate username. It’s also wise to actually **use the machine** a bit or at least simulate usage: create some documents in "Recent Files", set a custom wallpaper, etc. (These fall into human interaction category but are relevant here as static artifacts.) The goal is to avoid the appearance of a template VM that was never touched by a human. **Analysts** setting up VMs can easily change the hostname to something boring like `JOHNS-PC` and create a user account that isn’t the built-in "Administrator". Small details like having a browser history or some files in Downloads can make a difference for certain checks.
+- **Document as You Go:** Keep notes on design decisions and how you addressed challenges. For instance, document how you handle completion ordering or concurrency with io_uring. This will make writing your final GSoC report and the commit messages easier. It also means if you need to hand off the project or collaborate, others can follow your thought process. Consider maintaining a markdown document in your repo for this purpose.  
 
-### Human Interaction and User Activity Checks
+- **Focus on Code Quality for Early Deliverables:** It’s tempting to rush prototypes (which is fine initially), but when you aim to get something merged or reviewed, polish it. Clean up debug prints, add comments where the logic is not obvious (e.g., “Using IORING_OP_URING_CMD here to submit fuse request to kernel ([fuse: fuse-over-io-uring [LWN.net]](https://lwn.net/Articles/997400/#:~:text=This%20adds%20support%20for%20uring,are%20still%20to%20be%20expected))”). If you introduce any new build dependency or kernel header usage, note that. Early deliverables that are well-written will make reviewers more comfortable and likely to support your continued work. Conversely, if the first thing they see is very messy, they might be wary. So, for the first 1–2 deliverables especially, put effort into code clarity and correctness (even if performance isn’t fully optimized yet).  
 
-**How it works:** This is a growing category (and overlaps with the next section). Malware assumes that sandbox VMs often lack genuine user activity. So it checks for signs of a human: mouse movement, keyboard inputs, opened files, etc. One simple check is to see if the mouse has moved at all since boot or in the last few seconds ([Unveiling LummaC2 stealer’s novel Anti-Sandbox technique: Leveraging trigonometry for human behavior detection](https://outpost24.com/blog/lummac2-anti-sandbox-technique-trigonometry-human-detection/#:~:text=LummaC2%20v4,not%20emulate%20mouse%20movements%20realistically)). Another is to open a GUI dialog and see if a user clicks a button or types something (automated sandboxes typically won’t). Some malware count objects like the number of files in "Documents" or how many browser favorites or cookies exist – a very low count suggests a fresh VM ([Navigating the Vast Ocean of Sandbox Evasions](https://unit42.paloaltonetworks.com/sandbox-evasion-memory-detection/#:~:text=There%E2%80%99s%20a%20vast%20number%20of,we%20can%20do%20about%20them)). 
+- **Time Management:** Two months can fly by. Try to have the first deliverable (even if small) done by the end of Week 4. This could simply be: “QEMU/virtiofsd builds with an io_uring backend (behind an option), and doesn’t break normal operation.” Even if performance gains aren’t realized yet, having a toggle or prototype implementation is a tangible outcome. From Week 5 onward, you can optimize and add features. Reserving the last week or two for bug fixes, writing documentation, and upstream preparation is wise. Thus, front-load the critical coding in weeks 3–6 if possible.  
 
-**Example:** The LummaC2 stealer v4 introduced a sophisticated anti-sandbox: it waits for rapid **mouse movements** and then uses geometry to determine if the movement is human-like ([Unveiling LummaC2 stealer’s novel Anti-Sandbox technique: Leveraging trigonometry for human behavior detection](https://outpost24.com/blog/lummac2-anti-sandbox-technique-trigonometry-human-detection/#:~:text=The%20malware%20first%20starts%20by,different%20from%20the%20initial%20one)) ([Unveiling LummaC2 stealer’s novel Anti-Sandbox technique: Leveraging trigonometry for human behavior detection](https://outpost24.com/blog/lummac2-anti-sandbox-technique-trigonometry-human-detection/#:~:text=After%20these%205%20cursor%20positions,all%20consecutive%20cursor%20positions%20differ)). It collects 5 cursor positions over short intervals and computes the angles between successive movement vectors. If the angles don't reflect natural human motion (for instance, if the movement was too straight or too consistent, as might happen with automated cursor movement), it concludes no real user is present and loops, waiting longer ([Unveiling LummaC2 stealer’s novel Anti-Sandbox technique: Leveraging trigonometry for human behavior detection](https://outpost24.com/blog/lummac2-anti-sandbox-technique-trigonometry-human-detection/#:~:text=forever%20until%20all%20consecutive%20cursor,positions%20differ)) ([Unveiling LummaC2 stealer’s novel Anti-Sandbox technique: Leveraging trigonometry for human behavior detection](https://outpost24.com/blog/lummac2-anti-sandbox-technique-trigonometry-human-detection/#:~:text=LummaC2%20v4,different%20angles%20that%20are%20calculated)). This prevents execution in sandboxes that only simulate minimal or periodic mouse activity.
+- **Maintain Focus:** It’s easy to get sidetracked by interesting but non-critical aspects (e.g., experimenting with a different kernel bypass approach). Use your defined milestones to stay on track. If you find something truly blocking or a better approach mid-way, discuss it with your mentor quickly and adjust the plan rather than spinning wheels too long. Keeping the core goals in sight (reduce context switches, improve throughput for virtio-fs) will guide decision-making.  
 
-Another check: looking at the system uptime and last input time. If the system booted just 2 minutes ago and no input has happened, it might be a sandbox that just started.
+- **Clear Communication of Results:** When you achieve a milestone, communicate it clearly: for instance, in your weekly update or blog, include a short section like “**Milestone Achieved**: Asynchronous READ/WRITE with io_uring is implemented. In a test with 1 thread reading a 1GB file, CPU usage dropped from 50% to 35% on the host, and throughput improved by 15%. Next, I will tackle multiple concurrent I/O and ensure flush/fsync are handled.” Such concise reporting shows progress and gives others confidence in your work. It’s also great material for your GSoC evaluations.  
 
-**Code (mouse movement check):**
+By concentrating on a few key deliverables early (getting something working, even if not feature-complete, and demonstrating improvement), you establish momentum. This not only builds your credibility with the mentor and community but also boosts your own confidence. Each early success will make the subsequent challenges easier to handle. Remember that open-source development is as much about collaboration and communication as coding – so keep the conversation going with mentors and the QEMU community. By the end of the 2-month preparation (and certainly by the end of GSoC), you’ll want to have upstream-worthy patches. Planning, prioritizing, and iterating as outlined above will put you on the right path to achieve that.
 
-```cpp
-#include <windows.h>
-#include <iostream>
-int main(){
-    POINT p0, p1;
-    GetCursorPos(&p0);
-    Sleep(300);
-    GetCursorPos(&p1);
-    if(p0.x==p1.x && p0.y==p1.y) {
-        std::cout << "No mouse movement detected in 300ms\n";
-        // (Malware might loop here until movement)
-    } else {
-        std::cout << "Mouse moved: ("<< p0.x<<","<<p0.y<<") -> ("<<p1.x<<","<<p1.y<<")\n";
-    }
-}
-```
 
-This simple snippet checks if the mouse moved in a 0.3 second window ([Unveiling LummaC2 stealer’s novel Anti-Sandbox technique: Leveraging trigonometry for human behavior detection](https://outpost24.com/blog/lummac2-anti-sandbox-technique-trigonometry-human-detection/#:~:text=The%20malware%20first%20starts%20by,different%20from%20the%20initial%20one)). Real malware would continue only when sufficient movement is observed. LummaC2 did a more complex analysis of movement shape, but the principle of waiting for *any* movement is common.
-
-**Mitigation:** **Sandboxes** have started to incorporate pseudo-human behavior. This can mean scripting the VM to move the mouse cursor randomly, click on things, or simulate typing. However, as LummaC2 shows, malware may look for *quality* of movement, not just existence. So sandboxes are exploring more realistic interaction simulation (e.g., replaying recorded human input patterns). Another mitigation is to **feed the malware with pre-recorded inputs** if you detect it’s waiting – for example, if it’s polling cursor positions, the analysis system could generate some mouse events to satisfy it. Some advanced solutions integrate with the hypervisor to fake input at the VM level. 
-
-On the simpler side, **analysts** can manually intervene: if you suspect malware is hung waiting for input, you can click around or move the mouse in the VM yourself. This often kickstarts the malware. There are also tools to simulate user activity (like Cuckoo sandbox has options for mouse movement). For environment preparation: having a non-default wallpaper, some random files, and some evidence of past activity (recent documents, etc.) will satisfy checks for user artifacts ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=specific%20frequencies%20commonly%20used%20in,be%20a%20virtualized%20machine%20and%2For)). Essentially, make the VM look “lived in”. For the very advanced checks like Lumma’s trigonometry, one might need to actually use the machine naturally for a bit or find a way to inject a realistic mouse trajectory. Mitigating that specifically might involve updating sandbox scripts to sometimes jiggle the mouse in curvy motions rather than straight lines. 
-
-In summary, the more human your sandbox appears, the fewer of these checks will trip. It’s a challenging area but increasingly important as malware authors innovate in detecting sterile environments.
-
-## User Interaction-Based Evasion
-
-(We’ve already touched on human input, which overlaps here.) These techniques explicitly require human action or simulate user presence beyond just passive checking.
-
-### Dialogs and Message Boxes
-
-**How it works:** Some malware will pop up a message box or a dialog (perhaps a fake error: "This program cannot run, click OK to continue") and wait for the user to click OK. Automated sandboxes might either time out on this (if they don’t automatically press the button) or have an auto-dismiss that might be detectable (like if it disappears too fast consistently). By requiring a click, the malware ensures a human is behind the keyboard. This isn’t super common in widespread malware because it’s noisy, but it has been seen in targeted attacks or in strains that really try to avoid automated analysis.
-
-**Mitigation:** Sandboxes can handle this by either automatically clicking default buttons after a delay or by instrumenting the GUI. However, if malware measures the delay or expects a random human response, auto clicking could be a tell. Some analysis systems will screenshot such dialogs and pause, requiring an analyst to manually intervene (which defeats full automation but ensures progress). For researchers running samples manually, of course, just clicking through will solve it.
-
-### Keyboard and UI Interaction
-
-**How it works:** Besides mouse, malware might check keyboard input (e.g., using `GetAsyncKeyState` to see if any key has been pressed recently, or `GetLastInputInfo` to see how long the system has been idle). If the system has been idle since boot or for an unnaturally long time, it might suspect no user. Some ransomware, for example, avoid running if certain user activity is not present, to evade sandboxes.
-
-Another trick: checking if the **foreground window** or user’s active window is something like Task Manager or an analysis tool (some malware assume if Task Manager is open or a disassembler window is active, it’s being watched and will shut down).
-
-**Mitigation:** For sandboxes, simulating key presses or at least updating the “last input time” can help. Setting the foreground window to some decoy (like a fake Word document) might also make the malware think the user is doing something else. In practice, ensuring the VM isn’t just sitting completely idle is key.
-
-### Complex Human-Behavior Checks (LummaC2 example)
-
-We already covered LummaC2’s advanced check using cursor trajectory analysis ([Unveiling LummaC2 stealer’s novel Anti-Sandbox technique: Leveraging trigonometry for human behavior detection](https://outpost24.com/blog/lummac2-anti-sandbox-technique-trigonometry-human-detection/#:~:text=At%20this%20point%20we%20know,will%20never%20detonate%20the%20malware)) ([Unveiling LummaC2 stealer’s novel Anti-Sandbox technique: Leveraging trigonometry for human behavior detection](https://outpost24.com/blog/lummac2-anti-sandbox-technique-trigonometry-human-detection/#:~:text=LummaC2%20v4,different%20angles%20that%20are%20calculated)). This represents a new frontier where malware doesn’t just check for presence of activity, but analyzes the pattern. Mitigating this requires a similarly advanced approach on the sandbox side: e.g., capturing real user mouse movement patterns and replaying them in the sandbox to produce organic-looking input. Alternatively, if the sandbox can detect the malware is spending a lot of time in these checks (via traces), it might bypass that logic by patching or by short-circuiting the analysis.
-
-**Mitigation (advanced):** A possible mitigation for this is using **machine learning to generate human-like input** or even involving a human in the loop (some services might eventually use Mechanical Turk style human interaction for a few seconds on suspicious samples, though that raises its own issues). For now, sandbox devs are likely implementing deterministic scripts (like move mouse in a curve). As these checks are still relatively rare, a combination of simpler mitigations (moving mouse and pressing keys in random intervals) might work for most cases except the truly novel ones like Lumma’s.
-
-## Mitigation Strategies Summary
-
-We interwove mitigations above, but to summarize in a broader sense for both cybersecurity researchers and sandbox developers:
-
-- **Resource Realism:** Configure analysis VMs with realistic hardware specs (CPU cores, RAM, disk, devices). Avoid obviously low or exact values ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=Modern%20Specs%20Check%20,substandard%20specifications%20indicates%20a%20virtual)) ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=determine%20whether%20the%20machine%20has,Different%20aspects%20of%20the%20hardware)). Use common device names and remove or replace any with "Virtual" in them.
-
-- **Stealth Monitoring:** Use out-of-guest or less detectable methods to monitor malware ([Navigating the Vast Ocean of Sandbox Evasions](https://unit42.paloaltonetworks.com/sandbox-evasion-memory-detection/#:~:text=The%20gold%20standard%20for%20preventing,byte%20anywhere%20in%20the%20OS)). Hypervisor-level hooking, network monitoring, etc., leave fewer traces than injecting DLLs or patching code in the malware process.
-
-- **Artifact Scrubbing:** Remove or alter known VM artifacts (registry keys, file paths, process names) whenever possible ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=3,vmwvmcihostdev%20%E2%80%A2SYSTEM%5CCurrentControlSet%5CControl%5CVirtualDeviceDrivers)) ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=4,exe)). This includes not only virtualization markers but also analysis tool traces. Tools like Al-Khaser’s list or community scripts can help identify such artifacts in your VM environment to address them.
-
-- **Time Manipulation:** If accelerating malware execution (skipping sleeps), do so consistently and transparently (advance clocks to match). Alternatively, allocate longer runtime to catch late execution.
-
-- **Interaction Simulation:** Invest in simulating user activity – moving mouse, typing, changing window focus, even browsing a bit. This counters checks for human presence ([Unveiling LummaC2 stealer’s novel Anti-Sandbox technique: Leveraging trigonometry for human behavior detection](https://outpost24.com/blog/lummac2-anti-sandbox-technique-trigonometry-human-detection/#:~:text=LummaC2%20v4,not%20emulate%20mouse%20movements%20realistically)) ([mbc-markdown/anti-behavioral-analysis/virtual-machine-detection.md at main · MBCProject/mbc-markdown · GitHub](https://github.com/MBCProject/mbc-markdown/blob/master/anti-behavioral-analysis/virtual-machine-detection.md#:~:text=specific%20frequencies%20commonly%20used%20in,be%20a%20virtualized%20machine%20and%2For)). 
-
-- **Environment Diversity:** Don’t use identical snapshots for every analysis. Randomize things like MAC addresses ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=2,VirtualBox)), hostnames, user profiles, and even OS versions across analysis runs if feasible. This way, malware cannot have a single easy check that works everywhere.
-
-- **Monitoring Evasions:** As a researcher, monitor the malware for signs it’s checking these things. Tools (like API monitors, debugger with log breakpoints on suspicious APIs) can reveal “the malware tried to read CPUID or opened \\.\VBoxGuest”. Knowing what it’s checking helps tailor mitigations.
-
-- **Fallback to Bare Metal:** In cases of extremely stubborn malware that detects everything, running it on a sacrificial real machine (or bare-metal sandbox) may be necessary. Solutions like bare-metal analysis (using physical hardware or more transparent hypervisors) can catch what traditional VMs miss, at higher cost.
-
-Implementing these mitigations is a balancing act. Sandboxes must retain functionality and performance while eliminating clues that they are sandboxes. By combining multiple mitigation strategies, analysts and developers can significantly reduce the success of anti-VM, anti-sandbox techniques and thereby capture the malware’s true behavior ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=Conclusion%20Malware%20authors%20eventually%20find,security%20sandboxes%20and%20virtual%20machines)). Each time malware authors introduce a new trick, the defensive side adapts – an ongoing cat-and-mouse in the world of malware analysis.
-
-**Sources:** This report references known techniques documented by research blogs and projects like **Al-Khaser** ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=)) ([GitHub - ayoubfaouzi/al-khaser: Public malware techniques used in the wild: Virtual Machine, Emulation, Debuggers, Sandbox detection.](https://github.com/ayoubfaouzi/al-khaser#:~:text=,dir_watch.dll%20%28iDefense%20Labs)), academic and industry analyses (Unit 42, Outpost24) ([Unveiling LummaC2 stealer’s novel Anti-Sandbox technique: Leveraging trigonometry for human behavior detection](https://outpost24.com/blog/lummac2-anti-sandbox-technique-trigonometry-human-detection/#:~:text=LummaC2%20v4,not%20emulate%20mouse%20movements%20realistically)) ([Navigating the Vast Ocean of Sandbox Evasions](https://unit42.paloaltonetworks.com/sandbox-evasion-memory-detection/#:~:text=The%20following%20are%20just%20a,malware%20authors%20can%20check%20for)), and community knowledge bases ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=%E2%80%A2CPUID%3A%20This%20instruction%20is%20executed,it%20will%20equal%20to%201)) ([Malware | Igor Garofano blog](https://igorgarofano.wordpress.com/category/security/malware/#:~:text=4,exe)). These sources provide real-world examples of malware employing the above methods and informed the mitigation advice presented.
