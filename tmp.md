@@ -1,14 +1,3 @@
-Great, I’ll prepare a detailed 2-month preparation and setup plan for the QEMU GSoC project on FUSE over io_uring. This will include:
-
-- Learning path for Linux internals, FUSE, and io_uring.
-- Setting up the development and benchmarking environment for QEMU on Ubuntu 24.04.
-- Recommended PC hardware configuration for reliable compilation and virtualization.
-- Step-by-step instructions for building QEMU, running benchmarks, and profiling changes.
-- Focused support on your first 1–2 deliverables to help build early credibility in the project.
-
-I’ll get back to you shortly with everything organized in a clear format.
-
-# Preparation Plan for GSoC Project: **QEMU “FUSE over io_uring”** (2 Months)
 
 ## Learning Roadmap (Weeks 1–4)  
 Begin by strengthening your understanding of the key technologies involved. Dedicate the first month to study **FUSE**, **io_uring**, **Linux VFS**, the **QEMU storage (block) layer**, and general **asynchronous I/O** patterns in Linux. Use this time to read documentation, review example code, and experiment with small programs to internalize concepts:
