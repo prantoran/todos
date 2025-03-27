@@ -1,3 +1,19 @@
+```bash
+- 22 - SSH
+- 80 - WEBSOCKIFY
+- 81 - APACHE2 (/var/www/html)
+- 53 - DNS (unless room specifies otherwise)
+- 3389 - RDP
+- 5901 - VNC
+
+
+TOOLING (Optional):
+- 7777 (CyberChef)
+- 7778 (revshells.com offline)
+
+
+```
+
 https://www.qemu.org/docs/master/devel/submitting-a-patch.html
 
 ```bash
