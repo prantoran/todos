@@ -1,4 +1,19 @@
 ```bash
+Arjun                 intel                 Responder3
+armitage              jadx                  reverse-shell-generator
+BloodHound-linux-x64  john                  searchsploit
+BurpSuiteCommunity    metasploit-framework  smbmap
+containerd            microsoft             snmpcheck
+exploitdb             Mimikatz              SSRFmap
+fireprox              Neo-reGeorg           SSTImap
+ghidra_9.1.2_PUBLIC   PEAS                  starkiller-1.3.2.AppImage
+hashcat               phpggc                static-binaries
+hashcat-utils         Postman               sublime_text
+impacket              PowerSploit           zaproxy
+impacket-old          Responder
+```
+
+```bash
 - 22 - SSH
 - 80 - WEBSOCKIFY
 - 81 - APACHE2 (/var/www/html)
