@@ -1,4 +1,11 @@
 ```bash
+https://www.qemu.org/docs/master/devel/submitting-a-patch.html
+
+https://wiki.qemu.org/Documentation/GettingStartedDevelopers#Code
+```
+
+
+```bash
 Arjun                 intel                 Responder3
 armitage              jadx                  reverse-shell-generator
 BloodHound-linux-x64  john                  searchsploit
