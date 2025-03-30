@@ -8,6 +8,7 @@ https://wiki.qemu.org/Hosts/W32#Cross_builds
 ```bash
 https://wiki.qemu.org/Documentation/GettingStartedDevelopers
 https://wiki.qemu.org/Hosts/Linux
+https://wiki.qemu.org/Testing/DockerBuild
 ```
 
 ```bash
