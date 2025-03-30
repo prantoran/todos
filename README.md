@@ -6,7 +6,8 @@ https://www.qemu.org/docs/master/devel/submitting-a-patch.html
 https://wiki.qemu.org/Hosts/W32#Cross_builds
 ```
 ```bash
-https://wiki.qemu.org/Documentation/GettingStartedDevelopers#Code
+https://wiki.qemu.org/Documentation/GettingStartedDevelopers
+https://wiki.qemu.org/Hosts/Linux
 ```
 
 ```bash
