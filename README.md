@@ -1,9 +1,13 @@
+
+
 ```bash
 https://www.qemu.org/docs/master/devel/submitting-a-patch.html
 
+https://wiki.qemu.org/Hosts/W32#Cross_builds
+```
+```bash
 https://wiki.qemu.org/Documentation/GettingStartedDevelopers#Code
 ```
-
 
 ```bash
 Arjun                 intel                 Responder3
