@@ -1,11 +1,39 @@
 
 
 ```bash
+https://gitlab.com/qemu-project/qemu/-/commit/984a32f17e8dab0dc3d2328c46cb3e0c0a472a73
+qemu virtio-blk cache=directsync nvme block device
+qemu host disk write through
+https://wiki.qemu.org/Internships/ProjectIdeas/IOUring
+https://lore.kernel.org/all/20190719133530.28688-2-mehta.aaru20@gmail.com/
+write a small pwritev2() with RWF_DSYNC test code
+https://wiki.qemu.org/Documentation/GettingStartedDevelopers
+https://wiki.qemu.org/Contribute/FAQ
+https://www.evanjones.ca/durability-filesystem.html
+https://qemu-project.gitlab.io/qemu/devel/style.html
+https://www.qemu.org/docs/master/devel/secure-coding-practices.html
 https://www.qemu.org/docs/master/devel/submitting-a-patch.html
-
+http://man.he.net/man2/pwritev2
 https://wiki.qemu.org/Hosts/W32#Cross_builds
+https://news.ycombinator.com/item?id=39502465
+https://wiki.qemu.org/Features/tcg-multithread
+fio with ioengine=libaio,direct=1,sync=1 iodepth
+https://hackernoon.com/how-coroutines-enable-cooperative-multitasking-and-concurrency
+https://os.phil-opp.com/async-await/
+https://www.qemu.org/docs/master/devel/multi-thread-tcg.html
+https://www.qemu.org/docs/master/devel/multiple-iothreads.html
+https://kernelnewbies.org/KernelHacking
+https://kernelnewbies.org/FirstKernelPatch
+https://kernelnewbies.org/Linux_4.7
+https://www.qemu.org/2021/01/19/virtio-blk-scsi-configuration/
+https://www.qemu.org/docs/master/devel/virtio-backends.html
+https://brennan.io/2020/03/22/sos-block-device/
+https://qemu-project.gitlab.io/qemu/devel/tracing.html
+https://michael2012z.medium.com/tracing-in-qemu-8df4e4beaf1b
+https://wiki.qemu.org/Features/Tracing
 ```
 ```bash
+https://gitlab.com/qemu-project/qemu/-/commit/984a32f17e8dab0dc3d2328c46cb3e0c0a472a73
 https://wiki.qemu.org/Documentation/GettingStartedDevelopers
 https://wiki.qemu.org/Hosts/Linux
 https://wiki.qemu.org/Testing/DockerBuild
