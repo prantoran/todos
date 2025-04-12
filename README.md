@@ -1,3 +1,31 @@
+```bash
+
+check in qemu repo: sqe.opcode = IORING_OP_READV, io_uring_enter(), IOURING_ENTER_GETEVENTS
+is qemu steup such that it notifies the kernel of sqe (io_uring_enter()) or the kernel polls for entries
+when compiler reorder read/writes for optimization
+https://unixism.net/2020/04/io-uring-by-example-part-1-introduction/
+https://unixism.net/loti/
+https://sh4dy.com/
+https://sh4dy.com/2024/04/03/io_uring_1/
+https://www.kernel.org/doc/html/latest/block/ublk.html
+https://blogs.oracle.com/linux/post/an-introduction-to-the-io-uring-asynchronous-io-framework
+https://meltdownattack.com/
+https://kernel.dk/io_uring.pdf
+https://lwn.net/Articles/932079/
+io_uring vs IOCtl IOs
+Avoiding cache line bouncing / numa systems
+ptrace vs dtrace vs strace
+https://github.com/hiyouga/LLaMA-Factory
+https://github.com/langflow-ai/langflow
+Aiocontext is the event loop object
+OPThread does not BQL, so some legacy apis do not work
+BlockBackends
+aio_bh_schedule_oneshot() 
+#include "qemu/main-loop.h"
+what io_uring_prep_writev2 is doing
+AioContext home thread
+```
+
 https://sst.dev/docs
 
 ```bash
