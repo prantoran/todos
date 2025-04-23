@@ -1,4 +1,11 @@
 ```bash
+SIFT/SURF code
+Profiling Tools: Employ tools like gprof, Valgrind, or Intel VTune to identify slow functions.
+Efficient Memory Management: Ensure that memory allocation and deallocation are optimized to reduce overhead.
+```
+
+
+```bash
 
 check in qemu repo: sqe.opcode = IORING_OP_READV, io_uring_enter(), IOURING_ENTER_GETEVENTS
 is qemu steup such that it notifies the kernel of sqe (io_uring_enter()) or the kernel polls for entries
