@@ -1,4 +1,10 @@
 ```bash
+https://react.dev/reference/react/useState
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object
+https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Advanced_JavaScript_objects/Object_prototypes
+```
+
+```bash
 SIFT/SURF code
 Profiling Tools: Employ tools like gprof, Valgrind, or Intel VTune to identify slow functions.
 Efficient Memory Management: Ensure that memory allocation and deallocation are optimized to reduce overhead.
