@@ -1,0 +1,58 @@
+#include <windows.h>
+#include <cstdio>
+
+int main(){
+    
+    printf("Using cpuid:\n");
+    bool htt = false;
+    __asm__ __volatile__ (
+        "mov %%eax, 1\n\t"  // leaf processor info and feature bits
+        "cpuid\n\t"
+        "shr %%edx, 28\n\t" // shift to hypertread bit on intel
+        "and %%edx, 1\n\t"  // 0 in edx means no hyperthearding capacity
+        "movb %[d], %%dl\n\t"
+        : [d] "=m" (htt)
+        :
+        : "%eax", "%edx"    // clobbered registers
+    );
+
+    if (htt) {
+        printf("\tHyperthreading capacity found\n");
+    } else { // htt=0 only a single logical processor
+        printf("\tHyperthreading capacity not found\n");
+    }
+
+    printf("Using PEB:\n");
+    int cpu_cnt = 0;
+#if _WIN64
+    __asm__ __volatile__ (
+        "mov %%rax, [%%gs:0x060]\n\t"    // get PEB
+        "mov %%rax, [%%rax+0x0B8]\n\t"   // get cpu count
+        "mov %[a], %%eax\n\t"
+        : [a] "=m" (cpu_cnt)
+        :
+        : "%rax"
+    );
+#elif _WIN32
+    __asm__ __volatile__ (
+        "mov %%eax, [%%fs:0x030]\n\t"    // get PEB
+        "mov %%eax, [%%eax+0x064]\n\t"   // get cpu count
+        "mov %[a], %%eax\n\t"
+        : [a] "=m" (cpu_cnt)
+        :
+        : "%eax"
+    );
+#else
+    printf("ERROR: Could not access PEB, unsupported OS\n");
+#endif
+
+    printf("\tCPU count: %d\n", cpu_cnt);
+
+    if (!htt || cpu_cnt <= 4) {
+        printf("VM detected!\n");
+    } else {
+        printf("Most likely real system\n");
+    }
+
+    MessageBox(NULL, "Done", "Done", MB_ICONINFORMATION);
+}
