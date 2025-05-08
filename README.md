@@ -1,4 +1,187 @@
 ```bash
+https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-3a-part-1-manual.pdf
+https://www.intel.com/content/www/us/en/developer/topic-technology/open/guides-tutorials.html
+https://github.com/Unprotect-Project/Unprotect_Submission
+ https://isc.sans.edu/diary/31658
+SANS FOR710: Reverse-Engineering Malware - Advanced Code Analysis
+https://nostarch.com/evasive-malware
+https://unprotect.it/about/?trk=public_post_comment-text
+https://unprotect.it/technique/cpu-counting/
+https://fareedfauzi.github.io/
+https://malfav.gitbook.io/home
+https://www.linkedin.com/posts/deepanshusood_all-in-one-malware-analysis-cheat-sheet-activity-7223941301249929216-24pk
+[Zhou et al., 2021] Haoyi Zhou, Shanghang Zhang, Jieqi Peng,
+Shuai Zhang, Jianxin Li, Hui Xiong, and Wancai Zhang. Informer: Beyond efficient transformer for long sequence timeseries forecasting. In AAAI, 2021.
+[Zhou et al., 2022] Tian Zhou, Ziqing Ma, Qingsong Wen, Xue
+Wang, Liang Sun, and Rong Jin. FEDformer: Frequency enhanced decomposed transformer for long-term series forecasting.
+In ICML, 2022.
+
+[Yun et al., 2020] Chulhee Yun, Srinadh Bhojanapalli, Ankit Singh
+Rawat, Sashank J. Reddi, et al. Are transformers universal approximators of sequence-to-sequence functions? In ICLR, 2020
+
+[Mei et al., 2022] Hongyuan Mei, Chenghao Yang, and Jason Eisner. Transformer embeddings of irregularly spaced events and
+their participants. In ICLR, 2022.
+
+[Liu et al., 2022a] Shizhan Liu, Hang Yu, Cong Liao, Jianguo Li,
+Weiyao Lin, Alex X. Liu, and Schahram Dustdar. Pyraformer:
+Low-complexity pyramidal attention for long-range time series
+modeling and forecasting. In ICLR, 2022
+
+[Wu et al., 2021] Haixu Wu, Jiehui Xu, Jianmin Wang, and Mingsheng Long. Autoformer: Decomposition transformers with
+auto-correlation for long-term series forecasting. In NeurIPS,
+2021.
+
+[Chowdhury et al., 2022] Ranak Roy Chowdhury, Xiyuan Zhang,
+Jingbo Shang, Rajesh K Gupta, and Dezhi Hong. TARNet: Taskaware reconstruction for time-series transformer. In KDD, 2022
+
+[Liang et al., 2023] Yuxuan Liang, Yutong Xia, Songyu Ke, Yiwei
+Wang, Qingsong Wen, Junbo Zhang, Yu Zheng, and Roger Zimmermann. AirFormer: Predicting nationwide air quality in china
+with transformers. In AAAI, 2023.
+
+[Lim et al., 2021] Bryan Lim, Sercan O Arık, Nicolas Loeff, and ¨
+Tomas Pfister. Temporal fusion transformers for interpretable
+multi-horizon time series forecasting. International Journal of
+Forecasting, 37(4):1748–1764, 2021.
+
+[Xu et al., 2022] Jiehui Xu, Haixu Wu, Jianmin Wang, and Mingsheng Long. Anomaly Transformer: Time series anomaly detection with association discrepancy. In ICLR, 2022.
+
+[Yu et al., 2020] Cunjun Yu, Xiao Ma, Jiawei Ren, Haiyu Zhao, and
+Shuai Yi. Spatio-temporal graph transformer networks for pedestrian trajectory prediction. In ECCV, 2020.
+	 attention-based graph convolution
+
+[Li et al., 2019] Shiyang Li, Xiaoyong Jin, Yao Xuan, Xiyou Zhou,
+Wenhu Chen, Yu-Xiang Wang, and Xifeng Yan. Enhancing the
+locality and breaking the memory bottleneck of transformer on
+time series forecasting. In NeurIPS, 2019.
+
+[Zerveas et al., 2021] George Zerveas, Srideepika Jayaraman,
+Dhaval Patel, Anuradha Bhamidipaty, and Carsten Eickhoff. A
+transformer-based framework for multivariate time series representation learning. In KDD, 2021
+
+[Lim et al., 2021] Bryan Lim, Sercan O Arık, Nicolas Loeff, and ¨
+Tomas Pfister. Temporal fusion transformers for interpretable
+multi-horizon time series forecasting. International Journal of
+Forecasting, 37(4):1748–1764, 2021.
+
+
+JALI paper
+	https://dl.acm.org/doi/10.1145/3388767.3407339
+create a complete cpp code with console main, cross-compiled in ubuntu with mingw, do not use she handler:
+positional encoding
+	vanilla encoding
+	learnable encoding
+	timestamp encoding
+[Gehring et al., 2017] Jonas Gehring, Michael Auli, David Grangier, Denis Yarats, and Yann N Dauphin. Convolutional sequence
+to sequence learning. In ICML, 2017.
+Shaw et al., 2018] Peter Shaw, Jakob Uszkoreit, and Ashish
+Vaswani. Self-attention with relative position representations. In
+NAACL, 2018.
+Ke et al., 2021] Guolin Ke, Di He, and Tie-Yan Liu. Rethinking
+positional encoding in language pre-training. In ICLR, 2021.
+lief pyelftools parsing
+capstone radare2 disassembly
+F1-score, and the Area Under the Receiver Operating Characteristic curve (AUC-ROC)
+harmonic mean
+PCA vs LDA
+Statistical tests like Information Gain and Chi-Squared
+Fast Correlation-Based Filter (FCBF) 
+SHAP values (Shapley Additive Explanations)
+Labeled-Elfs (GitHub)
+Correlation analysis of features
+graph convolutional nn function call graphs
+angr
+Nebula transformer dynamic analysis
+pytorch nn
+
+ Laplace, MCMC, variational inference
+ tractable (closed-form moments, conjugacy with Gaussian priors)
+ Markov Chain Monte Carlo (MCMC) methods (e.g., Metropolis-Hastings, Gibbs sampling, Hamiltonian Monte Carlo) 
+Bayesian Gaussian discriminant analysis
+Bayesian regression
+marginal likelihood
+Gaussian noise
+Gaussian prior
+Gaussian discriminant analysis
+additive Gaussian noise
+(conjugate) Dirichlet prior
+analytical marginalization
+Exact marginalization vs sampling-based Bayesian model
+(log) marginal likelihood via gradient descent
+full marginal likelihood
+over-concentration of the approximate posterior
+https://www.bayesrulesbook.com/chapter-1
+stochastic variational inference
+maximizing lower bounds on marginal likelihood
+variational posterior
+log-sum-exp function
+ELBO - Jensen’s inequality
+MAP estimation of the features
+weak feature priors
+isotropic zero-mean Gaussian priors on feature weights
+canonical inverse-Wishart prior on Σ
+KL regularization
+
+Matthew D Hoffman, David M Blei, Chong Wang, and John Paisley. Stochastic variational inference. Journal of Machine Learning Research, 2013
+Jeremias Knoblauch, Jack Jewson, and Theodoros Damoulas. Generalized variational inference: Three arguments for deriving new posteriors. arXiv preprint arXiv:1904.02063, 2019
+
+Graph based vector search algo: HNSW, FAISS, quantization trees
+SPANN
+Filters: B-trees, inverted indices, skip list, R-trees, quad trees
+
+
+-------
+https://danielandriesse.com/theses/phd-thesis.pdf
+https://www.amazon.com/Practical-Binary-Analysis-Instrumentation-Disassembly/dp/1593279124/?asin=1593279124&revisionId=&format=4&depth=1
+https://ieeexplore.ieee.org/document/7961979
+SIGGRAPH PARC 2025
+SIGGRAPH TEDI 2024
+motion diffusion
+robotics
+	zmp control
+	momentum control
+Diffusion models in character animation 2025
+aio-wait
+	smp_mb__after_rmw
+Hedin Sharma Mahajan Isack Kar Tagliasacchi Yi NeurIPS 2023	
+stable diffusion
+Hertz ICLR 2023
+https://prompt-to-prompt.github.io/
+https://zero123.cs.columbia.edu/
+video diffusion model
+novel view diffusion model
+roodi: reconstructing occluded 
+	diffusion model + 3dgs
+keypoint matching nvidia diffusion model
+parallel tracking and mapping vs point tracking
+GitHub.com/ubc-vision
+
+
+AIO_WAIT_WHILE() gets called in main loop
+
+block  layer code must always run in IOTHread
+
+#include <pthread.h>
+	pthread_mutex_t 
+	pthread_cond_t 
+	pthread_t 
+#include <semaphore.h>
+https://web.archive.org/web/20180216233455/https://www.ibm.com/developerworks/linux/library/l-fuse/
+mounts allowed with the “user” option in /etc/fstab
+ kernel module (fuse.ko), a userspace library (libfuse.*) and a mount utility (fusermount)
+sshfs  sftp protocol FUSE
+how to use fusermount
+fuse vs fuseblk
+https://thelinuxcluster.com/2024/04/07/what-is-filesystem-in-userspace-fuse/
+https://www.kernel.org/doc/html/latest/filesystems/fuse.html
+https://fsgeek.ca/2019/06/18/fuse-file-systems-in-user-space/
+https://www.qemu.org/2021/08/22/fuse-blkexport/
+https://virtio-fs.gitlab.io/
+https://virtio-fs.gitlab.io/howto-qemu.html
+
+```
+
+
+```bash
 https://react.dev/reference/react/useState
 https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object
 https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Advanced_JavaScript_objects/Object_prototypes
